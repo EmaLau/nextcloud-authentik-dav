@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset=".7" stop-color="#161618"/></linearGradient></defs>
+  <rect width="400" height="300" rx="20" fill="url(#bg)" stroke="none"/>
+  <defs>
+    <radialGradient id="g" cx="62%" cy="45%" r="55%"><stop offset="0" stop-color="#a1a1aa" stop-opacity=".28"/><stop offset="1" stop-color="#a1a1aa" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#g)" stroke="none"/>
+  <!-- client WebDAV -->
+  <g stroke="#ffffff" stroke-opacity=".45" stroke-width="1.6">
+    <rect x="34" y="70" width="64" height="44" rx="6"/><path d="M28 122 H104"/>
+    <path d="M40 186 h18 l6 8 h30 v40 h-54 z"/>
+  </g>
+  <g stroke="#ffffff" stroke-opacity=".28" stroke-width="1.5" stroke-dasharray="4 6">
+    <path d="M104 96 H130 Q144 96 144 110 V138 H170"/>
+    <path d="M100 214 H130 Q144 214 144 200 V162 H170"/>
+  </g>
+  <!-- Nextcloud -->
+  <rect x="170" y="56" width="196" height="188" rx="18" fill="#1f1f23" fill-opacity=".6" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.8"/>
+  <path d="M222 132 a22 22 0 0 1 42 -8 a18 18 0 0 1 30 14 a16 16 0 0 1 -4 32 h-64 a20 20 0 0 1 -4 -38 z" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.8"/>
+  <!-- password -->
+  <g fill="#ffcc00" stroke="none"><circle cx="232" cy="206" r="3.5"/><circle cx="246" cy="206" r="3.5"/><circle cx="260" cy="206" r="3.5"/><circle cx="274" cy="206" r="3.5"/></g>
+  <rect x="218" y="194" width="100" height="24" rx="8" stroke="#ffffff" stroke-opacity=".3" stroke-width="1.4"/>
+  <path d="M190 76 H228" stroke="#ffffff" stroke-opacity=".3" stroke-width="1.4"/>
+  <!-- chiave -->
+  <circle cx="366" cy="44" r="10" stroke="#ffcc00" stroke-opacity=".8" stroke-width="1.6" fill="#0e0e17"/>
+  <path d="M376 44 H394 M388 44 v8 M382 44 v6" stroke="#ffcc00" stroke-opacity=".8" stroke-width="1.6"/>
+</svg>

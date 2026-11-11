@@ -1,5 +1,7 @@
 # Authentik password login for Nextcloud WebDAV
 
+<p align="center"><img src="docs/cover.svg" width="400" alt=""></p>
+
 > **Work in progress — private repository.** It runs on one homelab; a security review is needed before publishing. See [To do before publishing](#to-do-before-publishing).
 
 When Nextcloud users log in through **Authentik** (OpenID Connect), the web login works, but WebDAV clients (Finder, Windows Explorer, rclone, file managers) cannot do the OIDC dance: they only send a username and a password. Users then need a separate Nextcloud app password, or a second local password.
