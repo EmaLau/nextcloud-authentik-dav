@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>authentik_dav</id>
+	<name>Authentik password login</name>
+	<summary>Accept Authentik passwords for WebDAV and client logins</summary>
+	<description>Checks username/password against an Authentik flow (identification + password + MFA, no session created) for existing Nextcloud accounts. Local app, not from the app store.</description>
+	<version>1.0.0</version>
+	<licence>agpl</licence>
+	<author>local</author>
+	<namespace>AuthentikDav</namespace>
+	<types>
+		<authentication/>
+	</types>
+	<category>security</category>
+	<bugs>https://localhost</bugs>
+	<dependencies>
+		<nextcloud min-version="30" max-version="35"/>
+	</dependencies>
+</info>
