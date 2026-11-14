@@ -2,7 +2,7 @@
 
 <p align="center"><img src="docs/cover.svg" width="400" alt=""></p>
 
-> **Work in progress — private repository.** It runs on one homelab; a security review is needed before publishing. See [To do before publishing](#to-do-before-publishing).
+> **Work in progress — private repository.** It runs on one homelab; a security review is needed before publishing. See [the roadmap](ROADMAP.md).
 
 When Nextcloud users log in through **Authentik** (OpenID Connect), the web login works, but WebDAV clients (Finder, Windows Explorer, rclone, file managers) cannot do the OIDC dance: they only send a username and a password. Users then need a separate Nextcloud app password, or a second local password.
 
@@ -64,21 +64,9 @@ curl -u alice:'her-authentik-password' -X PROPFIND \
 
 Disable the app: `occ app:disable authentik_dav`.
 
-## To do before publishing
+## Roadmap
 
-Security review:
-
-- [ ] Rate limiting: check how Nextcloud's brute-force protection applies to this backend, and whether Authentik's own limits are enough.
-- [ ] Cache: consider memory-only caching and a shorter default TTL; document the trade-off.
-- [ ] `allow_local_address` is always on: make it a setting.
-- [ ] Refuse plain-HTTP `base_url` unless explicitly allowed.
-- [ ] Log failed attempts with enough context for fail2ban-style tooling.
-
-Packaging:
-
-- [ ] `info.xml`: real author, repository and bug tracker URLs; test and declare Nextcloud 36.
-- [ ] Automated tests (PHPUnit) with a mocked Authentik.
-- [ ] Screenshots of the Authentik flow.
+What is missing before the first public release, and the features planned after it, are in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
