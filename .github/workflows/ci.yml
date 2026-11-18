@@ -10,13 +10,18 @@ permissions:
 
 jobs:
   test:
-    name: PHP ${{ matrix.php }}
+    name: Nextcloud ${{ matrix.nextcloud }}, PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # PHP versions supported by Nextcloud 30-31
-        php: ['8.1', '8.2', '8.3', '8.4']
+        # The oldest and newest versions declared in appinfo/info.xml, plus one in between.
+        # "36" is Nextcloud's master branch until 36 is released.
+        include:
+          - { nextcloud: '30', ocp: 'dev-stable30', php: '8.1' }
+          - { nextcloud: '31', ocp: 'dev-stable31', php: '8.2' }
+          - { nextcloud: '35', ocp: 'dev-stable35', php: '8.3' }
+          - { nextcloud: '36', ocp: 'dev-master', php: '8.4' }
     steps:
       - uses: actions/checkout@v4
 
@@ -26,8 +31,10 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Install dependencies
-        run: composer install --no-interaction --no-progress
+      - name: Install dependencies (Nextcloud ${{ matrix.nextcloud }} API)
+        run: |
+          composer require --dev --no-interaction --no-update nextcloud/ocp:${{ matrix.ocp }}
+          composer update --no-interaction --no-progress
 
       - name: Lint
         run: composer lint
@@ -37,3 +44,15 @@ jobs:
 
       - name: Static analysis
         run: composer analyse
+
+  appinfo:
+    name: Validate appinfo/info.xml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate against the Nextcloud App Store schema
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
+          curl -fsSL https://apps.nextcloud.com/schema/apps/info.xsd -o info.xsd
+          xmllint --noout --schema info.xsd authentik_dav/appinfo/info.xml

@@ -383,6 +383,7 @@ final class MemoryLogger extends AbstractLogger {
 	/** @var list<array{0: string, 1: string}> */
 	public array $records = [];
 
+	/** @param array<mixed> $context */
 	public function log($level, string|\Stringable $message, array $context = []): void {
 		$this->records[] = [(string)$level, (string)$message];
 	}

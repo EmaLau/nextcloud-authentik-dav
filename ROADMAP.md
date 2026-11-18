@@ -17,7 +17,8 @@ Where this project is going. Items move from top to bottom; each release gets it
 
 ### Packaging and tests
 
-- [ ] `info.xml`: real author, repository and bug tracker URLs; test on **Nextcloud 36** and declare it.
+- [x] `info.xml`: real author, repository and bug tracker URLs, Nextcloud 30–36 declared; CI runs the tests against the API of 30, 31, 35 and 36 (master) and validates `info.xml` against the App Store schema.
+- [ ] When Nextcloud 36 is released: run the app on a real 36 instance and switch the CI from `dev-master` to `dev-stable36`.
 - [x] **PHPUnit tests** with a mocked Authentik (scripted flow executor answers): right password, wrong password, Authentik down, timeout, cache hit, admin refused when `allow_admins=no`.
 - [x] **CI** on GitHub Actions: `php -l`, PHPUnit and PHPStan (level 6) on PHP 8.1–8.4.
 - [ ] **Screenshots** of the Authentik flow and of a WebDAV client logging in.

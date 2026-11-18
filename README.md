@@ -31,7 +31,7 @@ This small Nextcloud app lets WebDAV and other password-based clients use the **
 
 ## Requirements
 
-- Nextcloud 30–35.
+- Nextcloud 30–36 (tested against the public API of 30, 31, 35 and the development branch of 36), PHP 8.1 or later.
 - Authentik, reachable **from the Nextcloud server**.
 - An existing Nextcloud account for every user (for example created in advance, or provisioned by `user_oidc` at the first web login).
 

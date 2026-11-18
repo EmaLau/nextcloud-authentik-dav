@@ -3,18 +3,50 @@
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>authentik_dav</id>
 	<name>Authentik password login</name>
-	<summary>Accept Authentik passwords for WebDAV and client logins</summary>
-	<description>Checks username/password against an Authentik flow (identification + password + MFA, no session created) for existing Nextcloud accounts. Local app, not from the app store.</description>
+	<name lang="it">Accesso con la password di Authentik</name>
+	<summary>Use your Authentik password in WebDAV clients, Finder, Explorer and rclone</summary>
+	<summary lang="it">Usa la password di Authentik nei client WebDAV, nel Finder, in Esplora risorse e in rclone</summary>
+	<description><![CDATA[When users log in to Nextcloud through **Authentik** (OpenID Connect), WebDAV and other password-based clients cannot follow the browser login: they only send a username and a password. This app lets those clients use the **Authentik password**.
+
+- Nextcloud asks Authentik whether the password is right, through a dedicated Authentik flow (identification and password stages) that creates no session.
+- It only checks passwords of **existing** Nextcloud accounts: it creates no users.
+- Users with MFA in Authentik, or with two-factor authentication in Nextcloud, are refused and keep using Nextcloud app passwords.
+- Nextcloud administrators are excluded by default.
+- A correct password is cached for 60 seconds in the local memory cache only. Failed attempts are throttled by Nextcloud and logged with user, address and reason, never the password.
+
+**Setup.** Create the check flow in Authentik (see the project README), then:
+
+    occ config:app:set authentik_dav base_url --value=https://authentik.example.com
+    occ config:app:set authentik_dav flow_slug --value=nextcloud-webdav-check
+
+If Authentik is on a private address, also set `allow_local_address` to `yes`.]]></description>
+	<description lang="it"><![CDATA[Quando gli utenti entrano in Nextcloud tramite **Authentik** (OpenID Connect), i client WebDAV e gli altri client con password non possono seguire il login dal browser: inviano solo nome utente e password. Questa app permette a quei client di usare la **password di Authentik**.
+
+- Nextcloud chiede ad Authentik se la password è giusta, tramite un flow dedicato (stage di identificazione e di password) che non crea sessioni.
+- Controlla solo le password di account Nextcloud **già esistenti**: non crea utenti.
+- Gli utenti con MFA su Authentik, o con l'autenticazione a due fattori su Nextcloud, vengono rifiutati e continuano a usare le password per le app di Nextcloud.
+- Gli amministratori di Nextcloud sono esclusi per default.
+- Una password giusta resta in memoria per 60 secondi, solo nella cache locale. I tentativi falliti sono limitati da Nextcloud e registrati con utente, indirizzo e motivo, mai la password.
+
+**Configurazione.** Crea il flow di controllo su Authentik (vedi il README del progetto), poi:
+
+    occ config:app:set authentik_dav base_url --value=https://authentik.example.com
+    occ config:app:set authentik_dav flow_slug --value=nextcloud-webdav-check
+
+Se Authentik ha un indirizzo privato, imposta anche `allow_local_address` a `yes`.]]></description>
 	<version>1.0.0</version>
 	<licence>agpl</licence>
-	<author>local</author>
+	<author homepage="https://github.com/EmaLau">EmaLau</author>
 	<namespace>AuthentikDav</namespace>
 	<types>
 		<authentication/>
 	</types>
 	<category>security</category>
-	<bugs>https://localhost</bugs>
+	<website>https://github.com/EmaLau/nextcloud-authentik-dav</website>
+	<bugs>https://github.com/EmaLau/nextcloud-authentik-dav/issues</bugs>
+	<repository type="git">https://github.com/EmaLau/nextcloud-authentik-dav.git</repository>
 	<dependencies>
-		<nextcloud min-version="30" max-version="35"/>
+		<php min-version="8.1"/>
+		<nextcloud min-version="30" max-version="36"/>
 	</dependencies>
 </info>
