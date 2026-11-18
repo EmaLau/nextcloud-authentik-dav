@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/EmaLau/nextcloud-authentik-dav/blob/main/docs/documentation.md
+    about: Installation, Authentik flow, settings, security, log messages, FAQ
+  - name: Documentazione in italiano
+    url: https://github.com/EmaLau/nextcloud-authentik-dav/blob/main/docs/documentazione.md
+    about: Installazione, flow su Authentik, impostazioni, sicurezza, messaggi nel log, domande frequenti

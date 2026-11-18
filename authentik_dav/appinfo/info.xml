@@ -35,6 +35,11 @@
 	<types>
 		<authentication/>
 	</types>
+	<documentation>
+		<user>https://github.com/EmaLau/nextcloud-authentik-dav/blob/main/docs/documentation.md#using-it-from-clients</user>
+		<admin>https://github.com/EmaLau/nextcloud-authentik-dav/blob/main/docs/documentation.md</admin>
+		<developer>https://github.com/EmaLau/nextcloud-authentik-dav/blob/main/docs/documentation.md#development</developer>
+	</documentation>
 	<category>security</category>
 	<website>https://github.com/EmaLau/nextcloud-authentik-dav</website>
 	<bugs>https://github.com/EmaLau/nextcloud-authentik-dav/issues</bugs>

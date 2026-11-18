@@ -1,0 +1,16 @@
+name: Feature request
+description: A new setting, check or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: e.g. "allow only some users of a group" or "support another identity provider"
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is it useful?
+      description: The problem it solves, and how you work around it today

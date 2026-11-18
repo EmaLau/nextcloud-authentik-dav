@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Full documentation in English and Italian (`docs/documentation.md`, `docs/documentazione.md`) and Italian README.
+- `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates.
+
 ## 1.1.0 — 2026-11-18
 
 ### Added
