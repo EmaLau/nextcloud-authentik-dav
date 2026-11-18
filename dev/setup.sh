@@ -1,5 +1,6 @@
 #!/bin/bash
 # Prepares the local development environment started with dev/compose.yaml:
+#   - copies the app into Nextcloud's custom_apps (run this script again after changing the code)
 #   - applies the Authentik blueprint (authentik/nextcloud-webdav-check.yaml)
 #   - creates test users in Authentik and Nextcloud: alice (no MFA), bob (MFA), carol (not in the "webdav" group)
 #   - enables the app and points it to the local Authentik
@@ -10,6 +11,9 @@ cd "$(dirname "$0")"
 set -a; . ./.env; set +a
 DC="docker compose -f compose.yaml --env-file .env"
 OCC() { $DC exec -T -u www-data nextcloud php occ "$@"; }
+
+echo "Copying the app into custom_apps..."
+$DC exec -T -u 0 nextcloud sh -c 'rm -rf /var/www/html/custom_apps/authentik_dav && cp -r /opt/authentik_dav /var/www/html/custom_apps/authentik_dav && chown -R www-data:www-data /var/www/html/custom_apps/authentik_dav'
 
 echo "Applying the blueprint..."
 $DC exec -T authentik-worker ak apply_blueprint /blueprints/custom/nextcloud-webdav-check.yaml >/dev/null 2>&1 || { echo 'blueprint failed'; exit 1; }

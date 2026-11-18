@@ -1,7 +1,8 @@
 # Local development environment: Authentik + Nextcloud with the app mounted.
 #   cp dev/.env.example dev/.env    # then put random values in it
 #   docker compose -f dev/compose.yaml --env-file dev/.env up -d
-#   dev/setup.sh                    # applies the blueprint, enables the app, creates test users
+#   dev/setup.sh                    # copies the app, applies the blueprint, creates test users
+#                                   (run it again after changing the app code)
 # Nextcloud: http://localhost:8088 · Authentik: http://localhost:9088
 # Throw-away data only: "docker compose -f dev/compose.yaml down -v" deletes everything.
 name: authentik-dav-dev
@@ -55,7 +56,9 @@ services:
     ports: ["127.0.0.1:8088:80"]
     volumes:
       - nc:/var/www/html
-      - ../authentik_dav:/var/www/html/custom_apps/authentik_dav:ro
+      # Mounted outside the web root: a mount inside custom_apps would make that folder root-owned,
+      # and Nextcloud 31 then refuses to install. dev/setup.sh copies the app into custom_apps.
+      - ../authentik_dav:/opt/authentik_dav:ro
 
 volumes:
   db:

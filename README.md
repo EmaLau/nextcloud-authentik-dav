@@ -143,7 +143,7 @@ Without PHP on the machine: `docker run --rm -v "$PWD:/app" -w /app composer:2 s
 ```bash
 cp dev/.env.example dev/.env          # put random values in it
 docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait
-dev/setup.sh
+dev/setup.sh                          # again after changing the app code
 dev/test.sh
 # Nextcloud: http://localhost:8088 · Authentik: http://localhost:9088
 docker compose -f dev/compose.yaml --env-file dev/.env down -v   # delete everything
