@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OCA\AuthentikDav\Tests;
@@ -53,6 +54,7 @@ final class ConfigTest extends TestCase {
 			'allow_http' => false,
 			'allow_local_address' => false,
 			'allow_admins' => false,
+			'forward_client_ip' => false,
 		], $this->config()->all());
 	}
 

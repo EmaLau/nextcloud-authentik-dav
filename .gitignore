@@ -5,3 +5,4 @@
 /.phpunit.result.cache
 /dev/.env
 /dist/
+/.php-cs-fixer.cache

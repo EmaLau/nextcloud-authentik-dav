@@ -14,6 +14,8 @@ OCC() { $DC exec -T -u www-data nextcloud php occ "$@"; }
 
 echo "Copying the app into custom_apps..."
 $DC exec -T -u 0 nextcloud sh -c 'rm -rf /var/www/html/custom_apps/authentik_dav && cp -r /opt/authentik_dav /var/www/html/custom_apps/authentik_dav && chown -R www-data:www-data /var/www/html/custom_apps/authentik_dav'
+# After a version change Nextcloud wants the app upgraded (does nothing otherwise).
+OCC upgrade >/dev/null 2>&1 || true
 
 echo "Applying the blueprint..."
 $DC exec -T authentik-worker ak apply_blueprint /blueprints/custom/nextcloud-webdav-check.yaml >/dev/null 2>&1 || { echo 'blueprint failed'; exit 1; }
@@ -50,5 +52,7 @@ OCC config:app:set authentik_dav allowed_groups --value='["webdav"]' >/dev/null
 # The end-to-end test makes many failed logins on purpose: switch off Nextcloud's own brute-force
 # throttling in this throw-away environment only (it answers 429 after repeated failures).
 OCC config:system:set auth.bruteforce.protection.enabled --type=boolean --value=false >/dev/null
+# The first-run welcome dialog would cover the pages in the browser test.
+OCC app:disable firstrunwizard >/dev/null 2>&1 || true
 OCC config:system:set memcache.local --value='\OC\Memcache\APCu' >/dev/null || true
 echo "Done. Nextcloud: http://localhost:8088 (admin / NC_ADMIN_PASS) · Authentik: http://localhost:9088 (akadmin / AK_ADMIN_PASS)"

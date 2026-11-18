@@ -49,6 +49,10 @@ jobs:
       - name: Static analysis
         run: composer analyse
 
+      - name: Coding standard (Nextcloud)
+        if: matrix.php == '8.1'
+        run: composer cs:check
+
   appinfo:
     name: Validate appinfo/info.xml
     runs-on: ubuntu-latest
@@ -62,7 +66,7 @@ jobs:
           xmllint --noout --schema info.xsd authentik_dav/appinfo/info.xml
 
   e2e:
-    name: End to end (Authentik ${{ matrix.authentik }}, Nextcloud ${{ matrix.nextcloud }})
+    name: End to end (Authentik ${{ matrix.authentik }}, Nextcloud ${{ matrix.nextcloud }}${{ matrix.db == 'postgres' && ', PostgreSQL' || '' }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -70,9 +74,13 @@ jobs:
         include:
           - { authentik: '2026.8.5', nextcloud: '35-apache' }
           - { authentik: '2026.8.5', nextcloud: '31-apache' }
+          - { authentik: '2026.8.5', nextcloud: '30-apache' }
+          - { authentik: '2026.5.8', nextcloud: '35-apache' }
+          - { authentik: '2026.8.5', nextcloud: '35-apache', db: postgres }
     env:
       AUTHENTIK_TAG: ${{ matrix.authentik }}
       NEXTCLOUD_TAG: ${{ matrix.nextcloud }}
+      COMPOSE_FILES: ${{ matrix.db == 'postgres' && '-f dev/compose.yaml -f dev/compose.postgres.yaml' || '-f dev/compose.yaml' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -83,7 +91,7 @@ jobs:
           done > dev/.env
 
       - name: Start Authentik and Nextcloud
-        run: docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait --wait-timeout 300
+        run: docker compose $COMPOSE_FILES --env-file dev/.env up -d --wait --wait-timeout 300
 
       - name: Wait for Nextcloud to finish installing
         run: |
@@ -99,10 +107,13 @@ jobs:
       - name: End-to-end checks
         run: dev/test.sh
 
+      - name: Browser test of the settings pages
+        run: dev/ui-test.sh
+
       - name: Logs on failure
         if: failure()
         run: |
-          docker compose -f dev/compose.yaml --env-file dev/.env logs --tail 200
+          docker compose $COMPOSE_FILES --env-file dev/.env logs --tail 200
           docker compose -f dev/compose.yaml --env-file dev/.env exec -T -u www-data nextcloud php occ log:tail 50 || true
 
   e2e-latest:
@@ -111,10 +122,18 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
-      AUTHENTIK_TAG: latest
       NEXTCLOUD_TAG: apache
     steps:
       - uses: actions/checkout@v4
+
+      - name: Latest Authentik release
+        # Authentik publishes no "latest" image tag: read the version of the latest release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api repos/goauthentik/authentik/releases/latest -q .tag_name)
+          echo "AUTHENTIK_TAG=${tag#version/}" >> "$GITHUB_ENV"
+          echo "Authentik ${tag#version/}"
 
       - name: Random test secrets
         run: |

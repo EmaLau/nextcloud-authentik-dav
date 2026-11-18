@@ -2,7 +2,7 @@
 
 Where this project is going. Items move from top to bottom; each release gets its own entry in [CHANGELOG.md](CHANGELOG.md).
 
-**Status:** 1.1 released on 18 November 2026 (1.0 the same day, after a security review of the code and of the Authentik flow). Runs on one homelab (Nextcloud 35, Authentik 2026.8). Changes: [CHANGELOG](CHANGELOG.md).
+**Status:** 1.2 released on 18 November 2026 (1.0 and 1.1 the same day; 1.0 after a security review of the code and of the Authentik flow). Runs on one homelab (Nextcloud 35, Authentik 2026.8). Changes: [CHANGELOG](CHANGELOG.md).
 
 ## 1.0 — first public release
 
@@ -30,7 +30,16 @@ Where this project is going. Items move from top to bottom; each release gets it
 - [x] **Group allowlist**: accept Authentik passwords only for members of chosen Nextcloud groups.
 - [x] **Setup check** in the Nextcloud admin overview: warns when Authentik is unreachable or the flow is not right.
 - [x] End-to-end tests with a real Authentik and a real Nextcloud in CI.
-- [ ] **Nextcloud App Store**: release script ready (`scripts/release.sh`); waiting for the code-signing certificate from [nextcloud/app-certificate-requests](https://github.com/nextcloud/app-certificate-requests), then register the app and upload the signed 1.1.0.
+- [ ] **Nextcloud App Store**: release script ready (`scripts/release.sh`); waiting for the code-signing certificate from [nextcloud/app-certificate-requests](https://github.com/nextcloud/app-certificate-requests), then register the app and upload the signed 1.2.0.
+
+## 1.2 — released on 18 November 2026
+
+- [x] `occ authentik_dav:test <user>` to see why a login fails.
+- [x] Personal setting: users can switch the Authentik password off for their own account.
+- [x] Blueprint options: Authentik group, limit on failed attempts per username.
+- [x] Client address passed on to Authentik (`forward_client_ip`).
+- [x] German, French and Spanish translations.
+- [x] Wider tests: Nextcloud 30, Authentik 2026.5, PostgreSQL, browser test of the settings pages, weekly run against the latest versions.
 
 ## Waiting for Nextcloud 36
 

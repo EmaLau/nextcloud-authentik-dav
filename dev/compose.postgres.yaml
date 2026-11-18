@@ -1,0 +1,27 @@
+# Variant of the end-to-end environment with Nextcloud on PostgreSQL instead of SQLite:
+#   docker compose -f dev/compose.yaml -f dev/compose.postgres.yaml --env-file dev/.env up -d --wait
+services:
+  nextcloud:
+    environment:
+      SQLITE_DATABASE: !reset null
+      POSTGRES_HOST: nc-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${PG_PASS}
+    depends_on:
+      nc-db: {condition: service_healthy}
+
+  nc-db:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${PG_PASS}
+    volumes: [nc-db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d nextcloud -U nextcloud"]
+      interval: 5s
+      retries: 20
+
+volumes:
+  nc-db:

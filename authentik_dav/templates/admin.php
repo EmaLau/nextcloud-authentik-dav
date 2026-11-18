@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 /** @var \OCP\IL10N $l */
-/** @var array{settings: array{base_url: string, flow_slug: string, cache_ttl: int, allowed_groups: list<string>, allow_http: bool, allow_local_address: bool, allow_admins: bool}, groups: array<string, string>, default_slug: string, max_ttl: int} $_ */
+/** @var array{settings: array{base_url: string, flow_slug: string, cache_ttl: int, allowed_groups: list<string>, allow_http: bool, allow_local_address: bool, allow_admins: bool, forward_client_ip: bool}, groups: array<string, string>, default_slug: string, max_ttl: int} $_ */
 $s = $_['settings'];
 $checked = fn (bool $on): string => $on ? ' checked' : '';
 ?>
@@ -53,6 +53,10 @@ $checked = fn (bool $on): string => $on ? ' checked' : '';
 			<p>
 				<input type="checkbox" class="checkbox" id="authentik-dav-allow-admins" name="allow_admins"<?php print_unescaped($checked($s['allow_admins'])); ?>>
 				<label for="authentik-dav-allow-admins"><?php p($l->t('Also accept the Authentik password for Nextcloud administrators')); ?></label>
+			</p>
+			<p>
+				<input type="checkbox" class="checkbox" id="authentik-dav-forward-ip" name="forward_client_ip"<?php print_unescaped($checked($s['forward_client_ip'])); ?>>
+				<label for="authentik-dav-forward-ip"><?php p($l->t('Send the client address to Authentik (X-Forwarded-For; used only if Authentik trusts this server as a proxy)')); ?></label>
 			</p>
 		</fieldset>
 

@@ -1,17 +1,20 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 — 2026-11-18
 
 ### Added
 
-- Full documentation in English and Italian (`docs/documentation.md`, `docs/documentazione.md`) and Italian README.
-- `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates.
-- App icon (`img/app.svg`, `img/app-dark.svg`), screenshots and documentation links in `info.xml` for the App Store.
-- Release archives include `CHANGELOG.md`, which the App Store shows.
-- Optional **limit on failed attempts per username** in the Authentik blueprint (`rate_limit: true`), based on Authentik's reputation scores, and a clear log reason when Authentik denies a user. Off by default: see the trade-off in the documentation.
-- Documentation: Nextcloud behind a reverse proxy, response times and account existence.
-- Weekly CI run with the latest Authentik and Nextcloud, Dependabot for GitHub Actions and development tools.
-- Release archives are also published as `authentik_dav.tar.gz`, so `releases/latest/download/authentik_dav.tar.gz` always points to the latest version.
+- **`occ authentik_dav:test <user>`**: runs the checks of a real login and says why it would be refused; warns about two-factor authentication in Nextcloud. The password is asked without echo and never printed.
+- **Personal setting**: every user can switch the Authentik password off for their own account (*Personal settings → Security*).
+- **Optional Authentik group** in the blueprint (`required_group`): only its members may use their password in WebDAV.
+- **Optional limit on failed attempts per username** in the blueprint (`rate_limit: true`), based on Authentik's reputation scores. Off by default: see the trade-off in the documentation.
+- **`forward_client_ip`**: passes the client's address to Authentik in `X-Forwarded-For`, so Authentik's logs and reputation show the real client.
+- The log reason when Authentik denies a user after the identification includes Authentik's message.
+- German, French and Spanish translations.
+- App icon, screenshots and documentation links in `info.xml`; `CHANGELOG.md` in the release archive.
+- Full documentation in English and Italian, Italian README, `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates. New sections: reverse proxy example, audit log, response times.
+- Tests: end to end also with Nextcloud 30, Authentik 2026.5 and PostgreSQL; the settings pages in a real browser (Playwright); PHPStan level 8; Nextcloud coding standard; weekly CI run against the latest Authentik and Nextcloud; Dependabot.
+- Release archives are also published as `authentik_dav.tar.gz` (`releases/latest/download/authentik_dav.tar.gz`).
 
 ## 1.1.0 — 2026-11-18
 

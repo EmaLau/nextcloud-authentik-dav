@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OCA\AuthentikDav\Tests;
@@ -32,7 +33,10 @@ final class ProbeTest extends TestCase {
 			}
 			return new class($answer, $status) implements IResponse {
 				/** @param array<string, mixed> $json */
-				public function __construct(private array $json, private int $status) {
+				public function __construct(
+					private array $json,
+					private int $status,
+				) {
 				}
 				public function getBody(): string {
 					return (string)json_encode($this->json);

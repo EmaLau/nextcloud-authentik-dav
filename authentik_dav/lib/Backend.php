@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OCA\AuthentikDav;
@@ -6,8 +7,10 @@ namespace OCA\AuthentikDav;
 use OCA\AuthentikDav\Service\AuthentikClient;
 use OCA\AuthentikDav\Service\Config;
 use OCP\ICacheFactory;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\User\Backend\ABackend;
 use OCP\User\Backend\ICheckPasswordBackend;
@@ -33,6 +36,7 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 		private IUserManager $userManager,
 		private IRequest $request,
 		private LoggerInterface $logger,
+		private IConfig $ncConfig,
 	) {
 	}
 
@@ -50,13 +54,9 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 			return false;
 		}
 		$uid = $user->getUID();
-		if ($this->groupManager->isAdmin($uid) && !$this->config->flag('allow_admins')) {
-			$this->logFailure($uid, 'administrators are excluded (allow_admins=no)');
-			return false;
-		}
-		$allowed = $this->config->allowedGroups();
-		if ($allowed !== [] && !$this->inAnyGroup($uid, $allowed)) {
-			$this->logFailure($uid, 'not in an allowed group (allowed_groups)');
+		$refused = $this->refusedLocally($user);
+		if ($refused !== null) {
+			$this->logFailure($uid, $refused);
 			return false;
 		}
 
@@ -72,7 +72,7 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 			return $uid;
 		}
 
-		$failure = $this->authentik->check($loginName, $password);
+		$failure = $this->authentik->check($loginName, $password, $this->request->getRemoteAddress());
 		if ($failure !== null) {
 			$this->logFailure($uid, $failure);
 			return false;
@@ -82,6 +82,48 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 		}
 		$this->logger->info('authentik_dav: Authentik password accepted for ' . $uid, ['app' => self::APP]);
 		return $uid;
+	}
+
+	/**
+	 * The checks done before contacting Authentik.
+	 *
+	 * @return string|null null when the account may use the Authentik password, otherwise the reason
+	 */
+	private function refusedLocally(IUser $user): ?string {
+		$uid = $user->getUID();
+		if ($this->groupManager->isAdmin($uid) && !$this->config->flag('allow_admins')) {
+			return 'administrators are excluded (allow_admins=no)';
+		}
+		$allowed = $this->config->allowedGroups();
+		if ($allowed !== [] && !$this->inAnyGroup($uid, $allowed)) {
+			return 'not in an allowed group (allowed_groups)';
+		}
+		if ($this->userDisabledIt($uid)) {
+			return 'the user switched it off in their personal settings';
+		}
+		return null;
+	}
+
+	/** Personal setting: the user can refuse the Authentik password for their own account. */
+	public function userDisabledIt(string $uid): bool {
+		return $this->ncConfig->getUserValue($uid, self::APP, 'disabled', 'no') === 'yes';
+	}
+
+	/**
+	 * Full check for "occ authentik_dav:test": the same steps as a real login, without the cache
+	 * and without logging.
+	 *
+	 * @return string|null null when the password would be accepted, otherwise the reason
+	 */
+	public function diagnose(string $loginName, string $password): ?string {
+		$user = $this->userManager->get($loginName);
+		if ($user === null) {
+			return 'there is no Nextcloud account named "' . $loginName . '"';
+		}
+		if (!$user->isEnabled()) {
+			return 'the Nextcloud account is disabled';
+		}
+		return $this->refusedLocally($user) ?? $this->authentik->check($loginName, $password);
 	}
 
 	/** @param list<string> $groups */

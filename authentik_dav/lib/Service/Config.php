@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OCA\AuthentikDav\Service;
@@ -14,7 +15,7 @@ class Config {
 	public const DEFAULT_FLOW_SLUG = 'nextcloud-webdav-check';
 	public const DEFAULT_CACHE_TTL = 60;
 	public const MAX_CACHE_TTL = 3600;
-	public const FLAGS = ['allow_http', 'allow_local_address', 'allow_admins'];
+	public const FLAGS = ['allow_http', 'allow_local_address', 'allow_admins', 'forward_client_ip'];
 
 	/** @var array<string, string>|null values from the settings form, used instead of the stored ones */
 	private ?array $override = null;
@@ -120,7 +121,7 @@ class Config {
 		return null;
 	}
 
-	/** @return array{base_url: string, flow_slug: string, cache_ttl: int, allowed_groups: list<string>, allow_http: bool, allow_local_address: bool, allow_admins: bool} */
+	/** @return array{base_url: string, flow_slug: string, cache_ttl: int, allowed_groups: list<string>, allow_http: bool, allow_local_address: bool, allow_admins: bool, forward_client_ip: bool} */
 	public function all(): array {
 		return [
 			'base_url' => $this->baseUrl(),
@@ -130,6 +131,7 @@ class Config {
 			'allow_http' => $this->flag('allow_http'),
 			'allow_local_address' => $this->flag('allow_local_address'),
 			'allow_admins' => $this->flag('allow_admins'),
+			'forward_client_ip' => $this->flag('forward_client_ip'),
 		];
 	}
 

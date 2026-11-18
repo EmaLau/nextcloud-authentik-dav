@@ -9,7 +9,7 @@
 [![CI](https://github.com/EmaLau/nextcloud-authentik-dav/actions/workflows/ci.yml/badge.svg)](https://github.com/EmaLau/nextcloud-authentik-dav/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/EmaLau/nextcloud-authentik-dav)](https://github.com/EmaLau/nextcloud-authentik-dav/releases)
 ![Nextcloud](https://img.shields.io/badge/Nextcloud-30--36-0082C9?logo=nextcloud&logoColor=white)
-![Authentik](https://img.shields.io/badge/Authentik-2026.8-FD4B2D)
+![Authentik](https://img.shields.io/badge/Authentik-2026.5--2026.8-FD4B2D)
 ![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?logo=php&logoColor=white)
 ![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
 
@@ -17,12 +17,14 @@
 
 - **The Authentik password in every WebDAV client**: Finder, Windows Explorer, rclone, Cyberduck, Linux and mobile file managers.
 - **No new accounts and no stored passwords**: it only checks the password of accounts that already exist in Nextcloud; Authentik stays the only place where passwords live.
-- **Ready-made Authentik blueprint**: one file creates the check flow and its own stages (username only, built-in password database only, MFA check), with an optional limit on failed attempts per username.
+- **Ready-made Authentik blueprint**: one file creates the check flow and its own stages (username only, built-in password database only, MFA check), with two options: a limit on failed attempts per username, and an Authentik group whose members only may log in.
 - **Safe defaults**: users with MFA, Nextcloud administrators and users outside the allowed groups are refused; plain HTTP and private addresses must be allowed explicitly; brute force is throttled by Nextcloud.
-- **Settings page** in *Administration settings → Security*, with a **Test connection** button that sends no password, and a **setup check** in the admin overview.
+- **Settings page** in *Administration settings → Security*, with a **Test connection** button that sends no password, a **setup check** in the admin overview, and `occ authentik_dav:test <user>` to see why a login fails.
+- **Users decide too**: each user can switch the Authentik password off for their own account and use only app passwords.
 - **Short local cache**: a correct password is kept as a hash for 60 seconds in local memory only, never in Redis.
 - **Logs for fail2ban**: one line per refused attempt with user, address and reason, never the password.
-- **Tested end to end**: unit tests on Nextcloud 30–36 and, at every push, real WebDAV logins against a real Authentik and Nextcloud in Docker.
+- **Tested end to end**: unit tests on Nextcloud 30–36 and, at every push, real WebDAV logins and the settings pages in a real browser, against Authentik 2026.5 and 2026.8 and Nextcloud 30, 31 and 35 in Docker.
+- **Translated** into English, Italian, German, French and Spanish.
 
 ## Screenshots
 
@@ -73,6 +75,7 @@ The app is a **password-only user backend**: it owns no users. For each check it
 | `allow_admins` | `no` | Accept the Authentik password for Nextcloud administrators too |
 | `allow_local_address` | `no` | Allow Authentik on a private address (LAN, VPN, Docker network) |
 | `allow_http` | `no` | Allow a plain `http://` address |
+| `forward_client_ip` | `no` | Send the client address to Authentik (`X-Forwarded-For`) |
 
 All of them are on the settings page, or `occ config:app:set authentik_dav <key> --value=...`. See [Settings](docs/documentation.md#settings).
 
@@ -96,8 +99,8 @@ scripts/           release archive and App Store signature
 ## Development
 
 ```bash
-composer install && composer test     # unit tests (also: composer lint, composer analyse)
-docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait && dev/setup.sh && dev/test.sh
+composer install && composer test     # unit tests (also: composer lint, composer analyse, composer cs:check)
+docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait && dev/setup.sh && dev/test.sh && dev/ui-test.sh
 ```
 
 The end-to-end environment needs a `dev/.env` copied from `dev/.env.example`. Everything is explained in [Development](docs/documentation.md#development).

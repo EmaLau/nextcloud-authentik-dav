@@ -9,7 +9,7 @@
 [![CI](https://github.com/EmaLau/nextcloud-authentik-dav/actions/workflows/ci.yml/badge.svg)](https://github.com/EmaLau/nextcloud-authentik-dav/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/EmaLau/nextcloud-authentik-dav)](https://github.com/EmaLau/nextcloud-authentik-dav/releases)
 ![Nextcloud](https://img.shields.io/badge/Nextcloud-30--36-0082C9?logo=nextcloud&logoColor=white)
-![Authentik](https://img.shields.io/badge/Authentik-2026.8-FD4B2D)
+![Authentik](https://img.shields.io/badge/Authentik-2026.5--2026.8-FD4B2D)
 ![PHP](https://img.shields.io/badge/PHP-8.1+-777BB4?logo=php&logoColor=white)
 ![Licenza](https://img.shields.io/badge/licenza-AGPL--3.0-blue)
 
@@ -17,12 +17,14 @@
 
 - **La password di Authentik in ogni client WebDAV**: Finder, Esplora risorse, rclone, Cyberduck, file manager di Linux e dei telefoni.
 - **Nessun account nuovo e nessuna password conservata**: controlla solo la password di account che esistono già in Nextcloud; Authentik resta l'unico posto dove stanno le password.
-- **Blueprint pronto per Authentik**: un solo file crea il flow di controllo e le sue stage (solo nome utente, solo database delle password di Authentik, controllo dell'MFA), con un limite facoltativo ai tentativi falliti per nome utente.
+- **Blueprint pronto per Authentik**: un solo file crea il flow di controllo e le sue stage (solo nome utente, solo database delle password di Authentik, controllo dell'MFA), con due opzioni: un limite ai tentativi falliti per nome utente, e un gruppo di Authentik i cui soli membri possono entrare.
 - **Impostazioni sicure per default**: utenti con MFA, amministratori di Nextcloud e utenti fuori dai gruppi ammessi vengono rifiutati; HTTP non cifrato e indirizzi privati vanno consentiti esplicitamente; i tentativi a forza bruta li limita Nextcloud.
-- **Pagina di impostazioni** in *Impostazioni di amministrazione → Sicurezza*, con un pulsante **Prova connessione** che non invia password, e un **controllo nella panoramica** di amministrazione.
+- **Pagina di impostazioni** in *Impostazioni di amministrazione → Sicurezza*, con un pulsante **Prova connessione** che non invia password, un **controllo nella panoramica** di amministrazione, e `occ authentik_dav:test <utente>` per capire perché un accesso fallisce.
+- **Decidono anche gli utenti**: ognuno può spegnere la password di Authentik per il proprio account e usare solo password per app.
 - **Cache locale breve**: una password giusta resta come hash per 60 secondi, solo nella memoria locale, mai su Redis.
 - **Log adatti a fail2ban**: una riga per ogni tentativo rifiutato con utente, indirizzo e motivo, mai la password.
-- **Provata da cima a fondo**: test unitari su Nextcloud 30–36 e, a ogni modifica, accessi WebDAV veri contro un Authentik e un Nextcloud veri in Docker.
+- **Provata da cima a fondo**: test unitari su Nextcloud 30–36 e, a ogni modifica, accessi WebDAV veri e le pagine delle impostazioni in un browser vero, con Authentik 2026.5 e 2026.8 e Nextcloud 30, 31 e 35 in Docker.
+- **Tradotta** in inglese, italiano, tedesco, francese e spagnolo.
 
 ## Schermate
 
@@ -73,6 +75,7 @@ L'app è un **backend utenti solo per le password**: non possiede utenti. Per og
 | `allow_admins` | `no` | Accetta la password di Authentik anche per gli amministratori di Nextcloud |
 | `allow_local_address` | `no` | Consente Authentik su un indirizzo privato (LAN, VPN, rete Docker) |
 | `allow_http` | `no` | Consente un indirizzo `http://` non cifrato |
+| `forward_client_ip` | `no` | Invia ad Authentik l'indirizzo del client (`X-Forwarded-For`) |
 
 Sono tutte nella pagina delle impostazioni, oppure `occ config:app:set authentik_dav <chiave> --value=...`. Vedi [Impostazioni](docs/documentazione.md#impostazioni).
 
@@ -96,8 +99,8 @@ scripts/           archivio di release e firma per lo Store
 ## Sviluppo
 
 ```bash
-composer install && composer test     # test unitari (anche: composer lint, composer analyse)
-docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait && dev/setup.sh && dev/test.sh
+composer install && composer test     # test unitari (anche: composer lint, composer analyse, composer cs:check)
+docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait && dev/setup.sh && dev/test.sh && dev/ui-test.sh
 ```
 
 L'ambiente dei test completi richiede un `dev/.env` copiato da `dev/.env.example`. Tutto è spiegato in [Sviluppo](docs/documentazione.md#sviluppo).

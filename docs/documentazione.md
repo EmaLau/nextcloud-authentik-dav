@@ -18,6 +18,7 @@ Questa è la guida completa di `authentik_dav`, l'app per Nextcloud che permette
 - [Sicurezza](#sicurezza)
 - [Prova di connessione e controllo nella panoramica](#prova-di-connessione-e-controllo-nella-panoramica)
 - [Messaggi nel log e problemi comuni](#messaggi-nel-log-e-problemi-comuni)
+- [Esempio: Nextcloud e Authentik dietro un reverse proxy](#esempio-nextcloud-e-authentik-dietro-un-reverse-proxy)
 - [Aggiornare e rimuovere](#aggiornare-e-rimuovere)
 - [Come è fatta](#come-è-fatta)
 - [Sviluppo](#sviluppo)
@@ -49,8 +50,8 @@ Il flow non ha lo stage *User login*, quindi non crea mai una sessione su Authen
 
 ## Requisiti
 
-- **Nextcloud dalla 30 alla 36**, PHP 8.1 o successivo. Il codice è provato con l'API pubblica di Nextcloud 30, 31, 35 e del ramo di sviluppo, e dal vivo su Nextcloud 31 e 35 veri.
-- **Authentik**, raggiungibile **dal server Nextcloud** (non solo dai browser degli utenti). Provato con Authentik 2026.8.
+- **Nextcloud dalla 30 alla 36**, PHP 8.1 o successivo. Il codice è provato con l'API pubblica di Nextcloud 30, 31, 35 e del ramo di sviluppo, e dal vivo su Nextcloud 30, 31 e 35 veri.
+- **Authentik**, raggiungibile **dal server Nextcloud** (non solo dai browser degli utenti). Provato con Authentik 2026.5 e 2026.8.
 - Un **account Nextcloud già esistente** per ogni utente, con lo stesso nome utente che ha su Authentik. Gli account si possono creare prima o farli creare da `user_oidc` al primo accesso dal web.
 - Consigliata: una **cache in memoria locale** in Nextcloud (`memcache.local`, di solito APCu). Senza, ogni richiesta viene controllata su Authentik.
 
@@ -81,11 +82,15 @@ Riapplicarlo rimette il flow e le tre stage a queste impostazioni, quindi serve 
 
 Nextcloud limita gli accessi sbagliati **per indirizzo IP**. Non ferma chi prova tante password su un solo account da molti indirizzi diversi, e non aiuta nemmeno il limite dello stage password di Authentik: conta i tentativi dentro una sola esecuzione del flow, e l'app ne avvia una nuova per ogni controllo.
 
-Il blueprint può aggiungere un limite **per nome utente**, basato sui punteggi di reputazione di Authentik. Imposta `rate_limit: true` nel suo `context` (modificando il file, oppure scrivendo `{"rate_limit": true}` nel campo *Context* dell'istanza del blueprint). Aggiunge uno stage di rifiuto subito dopo l'identificazione, usato quando la reputazione dell'utente è scesa a `rate_limit_threshold` (predefinito `-5`) o sotto: la password a quel punto non viene nemmeno controllata, e il log di Nextcloud dice `Authentik denied access to this user (too many failed attempts?)`.
+Il blueprint può aggiungere un limite **per nome utente**, basato sui punteggi di reputazione di Authentik. Imposta `rate_limit: true` nel suo `context` (modificando il file, oppure scrivendo `{"rate_limit": true}` nel campo *Context* dell'istanza del blueprint). Aggiunge uno stage di rifiuto subito dopo l'identificazione, usato quando la reputazione dell'utente è scesa a `rate_limit_threshold` (predefinito `-5`) o sotto: la password a quel punto non viene nemmeno controllata, e il log di Nextcloud dice `Authentik denied access to this user: Too many failed attempts for this user. Try again later.`.
 
 Come conta Authentik: ogni password sbagliata abbassa di 1 il punteggio di quel nome utente; un controllo riuscito non lo alza (il flow non ha lo stage di login). Ogni controllo arriva dall'indirizzo del server Nextcloud, e Authentik tiene un punteggio di almeno -5 per nome utente e indirizzo, quindi la soglia non può scendere sotto -5. I punteggi si dimenticano 24 ore dopo il primo errore (`AUTHENTIK_REPUTATION__EXPIRY`).
 
 Il compromesso: con le impostazioni predefinite **5 password sbagliate in un giorno bloccano WebDAV per quell'utente** finché il punteggio scade (il login dal web non cambia). Ferma chi prova a indovinare la password di un account, ma chiunque conosca un nome utente può anche bloccarne di proposito l'accesso WebDAV, e un client che continua a mandare una password vecchia può bloccare il suo stesso utente. Consigliato quando Nextcloud è raggiungibile da Internet; non serve quando si raggiunge solo da una VPN. Per sbloccare un utente, cancella i suoi punteggi in *Customization → Reputation scores*. Per spegnere il limite, togli dal flow il collegamento dello stage all'ordine 15.
+
+#### Facoltativo: solo i membri di un gruppo di Authentik
+
+Imposta `required_group` nel `context` del blueprint con il nome di un gruppo di Authentik già esistente (per esempio `{"required_group": "webdav-users"}` nel campo *Context* dell'istanza del blueprint). Gli utenti fuori da quel gruppo vengono rifiutati subito dopo l'identificazione, prima che la loro password venga controllata; il log di Nextcloud dice `Authentik denied access to this user: This account may not use its password in WebDAV clients.` Qui si usano i gruppi **di Authentik**; *Gruppi ammessi* nelle impostazioni dell'app usa i gruppi **di Nextcloud**, e si possono usare insieme. Per spegnerlo, togli dal flow il collegamento dello stage all'ordine 16.
 
 <details>
 <summary>Creare il flow a mano</summary>
@@ -139,6 +144,7 @@ Tutto si cambia dalla pagina delle impostazioni oppure con `occ config:app:set a
 | `allow_admins` | `no` | `yes` per accettare la password di Authentik anche per gli amministratori di Nextcloud |
 | `allow_local_address` | `no` | `yes` quando Authentik ha un indirizzo privato (LAN, VPN, rete Docker) |
 | `allow_http` | `no` | `yes` per consentire un indirizzo `http://` non cifrato (solo per Authentik sulla stessa macchina o su una rete fidata) |
+| `forward_client_ip` | `no` | `yes` per inviare ad Authentik l'indirizzo del client in `X-Forwarded-For`, così log, eventi e reputazione di Authentik mostrano il client vero invece del server Nextcloud. Authentik usa l'intestazione solo se l'indirizzo di Nextcloud è tra i suoi proxy fidati (`AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS`, per default le reti private) |
 
 Note:
 
@@ -168,6 +174,10 @@ Utenti che **non possono** usare la password di Authentik e devono creare invece
 
 Le app ufficiali di Nextcloud per computer e telefono usano il login dal browser (Login Flow v2) e non hanno bisogno di questa app.
 
+**Impostazione personale.** Ogni utente può spegnere la password di Authentik per il proprio account in *Impostazioni personali → Sicurezza → Password di Authentik nei client WebDAV*, per esempio per usare solo password per app, che si possono revocare dispositivo per dispositivo. Quando è spenta, la password di Authentik viene rifiutata per quell'account anche se è ancora in cache. Gli amministratori possono fare lo stesso con `occ user:setting <utente> authentik_dav disabled yes`.
+
+La password di Authentik è accettata anche dal **modulo di login dal web** di Nextcloud, per gli account che possono usarla: l'app è un backend delle password, e Nextcloud interroga tutti i backend da qualunque parte arrivi il login.
+
 ## Sicurezza
 
 **Cosa viene inviato e a chi.** Nome utente e password vanno dal client a Nextcloud (come per qualsiasi accesso con password) e da Nextcloud ad Authentik, tramite il flow di controllo. Nient'altro esce dal server. Usa `https://` per entrambi, oppure tieni il traffico sulla stessa macchina.
@@ -185,6 +195,10 @@ Le app ufficiali di Nextcloud per computer e telefono usano il login dal browser
 **Nextcloud dietro un reverse proxy.** Se Nextcloud sta dietro un reverse proxy (Traefik, Caddy, nginx), imposta `trusted_proxies` (e, se serve, `forwarded_for_headers`) nel `config.php` di Nextcloud. Altrimenti ogni richiesta sembra arrivare dal proxy: nei log c'è l'indirizzo del proxy, e la protezione anti-forza bruta blocca tutti insieme quando un solo client sbaglia troppe volte.
 
 **Tempi di risposta.** Nextcloud risponde più in fretta per un account che non esiste che per uno che esiste (controlla l'hash della password solo per gli account veri): misurato su Nextcloud 35, circa 10 ms contro 170 ms. Quindi l'esistenza di un account si può già intuire dai tempi, con o senza questa app. L'app allarga la differenza (aspetta Authentik solo per gli account esistenti) ma non rivela nulla di nuovo. La protezione anti-forza bruta rallenta chi prova molti nomi.
+
+**Indirizzo del client.** Per default Authentik vede ogni controllo come se arrivasse dal server Nextcloud. Con `forward_client_ip=yes` l'app gli passa l'indirizzo del client in `X-Forwarded-For`, preso da quello che Nextcloud stesso considera l'indirizzo del client (quindi il client non può sceglierlo), e Authentik lo usa se considera il server Nextcloud un proxy fidato.
+
+**Log di audit.** Con l'app *Auditing / Logging* di Nextcloud (`admin_audit`) e il livello di log a *info*, ogni login WebDAV che passa da questa app compare in `audit.log` come `Login attempt`, `Login successful` o `Login failed`, come qualsiasi altro login.
 
 **Log.** Ogni tentativo rifiutato finisce nel log a livello *warning* con utente, indirizzo del client e motivo, **mai la password** (vedi sotto). I test completi controllano che nessuna password arrivi nel log di Nextcloud.
 
@@ -224,8 +238,10 @@ authentik_dav: login failed for user 'alice' from '192.0.2.10': <motivo>
 | `wrong password` | Authentik ha rifiutato la password | — |
 | `the user has MFA in Authentik (use a Nextcloud app password)` | l'utente ha un secondo fattore su Authentik | l'utente crea una password per app di Nextcloud |
 | `administrators are excluded (allow_admins=no)` | l'account è un amministratore di Nextcloud | password per app, oppure `allow_admins=yes` |
+| `the user switched it off in their personal settings` | l'utente ha rifiutato la password di Authentik per il suo account | l'utente la riaccende, o usa una password per app |
+| `Authentik denied access to this user: This account may not use its password in WebDAV clients.` | il gruppo di Authentik facoltativo del blueprint: l'utente non ne fa parte | aggiungi l'utente al gruppo su Authentik |
 | `not in an allowed group (allowed_groups)` | `allowed_groups` è impostato e l'utente non è in nessuno di quei gruppi | aggiungi l'utente a un gruppo o cambia l'impostazione |
-| `Authentik denied access to this user (too many failed attempts?)` | il limite facoltativo ai tentativi falliti ha bloccato il nome utente | aspetta che il punteggio scada, o cancellalo su Authentik |
+| `Authentik denied access to this user: Too many failed attempts for this user. Try again later.` | il limite facoltativo ai tentativi falliti ha bloccato il nome utente | aspetta che il punteggio scada, o cancellalo su Authentik |
 | `Authentik did not accept the username` | lo stage di identificazione ha rifiutato il nome | controlla che il nome utente su Authentik sia uguale al nome dell'account Nextcloud |
 | `base_url is not configured` | l'indirizzo è vuoto | impostalo |
 | `base_url uses plain HTTP; use https or set allow_http=yes` | indirizzo `http://` | usa `https://`, o `allow_http=yes` |
@@ -234,12 +250,53 @@ authentik_dav: login failed for user 'alice' from '192.0.2.10': <motivo>
 | `unexpected first stage of the Authentik flow: …` | flow sbagliato, o lo slug punta a un altro flow | usa il flow del blueprint |
 | `unexpected stage after the password: …` | il flow ha altre stage dopo la password (consenso, user login…) | usa il flow del blueprint |
 
+**Provare un utente da riga di comando.** `occ authentik_dav:test <utente>` fa esattamente i controlli di un login vero (senza cache), chiede la password senza mostrarla (oppure la legge da `AUTHENTIK_DAV_PASSWORD` con `--password-from-env`) e dice perché verrebbe rifiutata. Avvisa anche se l'account ha l'autenticazione a due fattori su Nextcloud. La password non viene mai stampata né scritta nel log.
+
+```
+$ occ authentik_dav:test alice
+✓ Connection to Authentik: ok (user fields: username)
+Authentik password for alice:
+✗ Refused: the user has MFA in Authentik (use a Nextcloud app password)
+```
+
 Altre situazioni:
 
 - **`429 Too Many Requests` da WebDAV**: la protezione anti-forza bruta di Nextcloud ha bloccato l'indirizzo dopo troppi errori. Aspetta, oppure `occ security:bruteforce:reset <ip>`.
 - **Funziona dal web ma non dal Finder**: controlla il nome utente (non l'email né il nome visualizzato) e se l'utente ha l'MFA o il 2FA di Nextcloud.
 - **Una password cambiata funziona ancora per un minuto**: è la cache; abbassa `cache_ttl` se serve.
 - **Niente nel log**: l'account non esiste in Nextcloud o è disattivato. L'app li ignora di proposito.
+
+## Esempio: Nextcloud e Authentik dietro un reverse proxy
+
+Una configurazione comune: entrambi dietro Caddy (o Traefik, nginx) nella stessa rete Docker.
+
+```
+# Caddyfile
+cloud.example.com {
+	reverse_proxy nextcloud:80
+}
+auth.example.com {
+	reverse_proxy authentik-server:9000
+}
+```
+
+Nel `config.php` di Nextcloud, considera fidato il proxy, così log e protezione anti-forza bruta vedono i client veri:
+
+```php
+'trusted_proxies' => ['172.18.0.0/16'],   // la rete Docker del proxy
+'overwriteprotocol' => 'https',
+```
+
+Per l'app conviene l'indirizzo **interno** di Authentik: non dipende dal DNS né dal proxy, e il traffico resta dentro la rete Docker.
+
+| Impostazione | Valore |
+|---|---|
+| Indirizzo di Authentik | `http://authentik-server:9000` |
+| Consenti HTTP non cifrato | acceso (il traffico non esce dalla rete Docker) |
+| Consenti un indirizzo privato | acceso |
+| Invia ad Authentik l'indirizzo del client | acceso, se vuoi i client veri su Authentik (le reti Docker sono tra i proxy fidati predefiniti di Authentik) |
+
+Funziona anche l'indirizzo pubblico (`https://auth.example.com`), senza le due eccezioni, se il container di Nextcloud riesce a risolverlo e raggiungerlo.
 
 ## Aggiornare e rimuovere
 
@@ -261,7 +318,9 @@ authentik_dav/
   lib/Controller/SettingsController  salva e prova (solo amministratori, con controllo CSRF)
   lib/Settings/Admin.php             il modulo in Impostazioni di amministrazione → Sicurezza
   lib/SetupCheck/AuthentikConnection il controllo in Impostazioni di amministrazione → Panoramica
-  templates/, js/, css/, l10n/       pagina delle impostazioni (JavaScript semplice, senza build), traduzioni
+  lib/Settings/Personal.php          l'impostazione personale; lib/Controller/PersonalController la salva
+  lib/Command/TestLogin.php          occ authentik_dav:test
+  templates/, js/, css/, l10n/       pagine delle impostazioni (JavaScript semplice, senza build), traduzioni (de, es, fr, it)
 authentik/                           il blueprint di Authentik
 dev/                                 ambiente Docker e test completi
 tests/                               test PHPUnit
@@ -278,7 +337,8 @@ I **test unitari** usano gli stub dell'API pubblica di Nextcloud (`nextcloud/ocp
 composer install
 composer test      # PHPUnit
 composer lint      # php -l su ogni file
-composer analyse   # PHPStan, livello 6
+composer analyse   # PHPStan, livello 8
+composer cs:check  # stile del codice di Nextcloud (composer cs:fix per applicarlo)
 ```
 
 Senza PHP: `docker run --rm -v "$PWD:/app" -w /app composer:2 sh -c 'composer install && composer test'`.
@@ -289,13 +349,16 @@ I **test completi** usano un Authentik e un Nextcloud veri in Docker:
 cp dev/.env.example dev/.env          # sostituisci ogni valore con una stringa casuale
 docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait
 dev/setup.sh                          # copia l'app, applica il blueprint, crea gli utenti di prova
-dev/test.sh                           # accessi WebDAV veri e controlli nella panoramica
+dev/test.sh                           # accessi WebDAV veri, opzioni del blueprint, comando occ, controlli nella panoramica
+dev/ui-test.sh                        # le pagine delle impostazioni in un browser vero (Playwright, in Docker)
 docker compose -f dev/compose.yaml --env-file dev/.env down -v   # cancella tutto
 ```
 
+`dev/compose.postgres.yaml` avvia lo stesso ambiente con Nextcloud su PostgreSQL invece di SQLite (aggiungi `-f dev/compose.postgres.yaml`). `AUTHENTIK_TAG` e `NEXTCLOUD_TAG` scelgono le versioni.
+
 `dev/setup.sh` crea `alice` (senza MFA, nel gruppo ammesso), `bob` (con MFA) e `carol` (fuori dal gruppo ammesso), con la password di Authentik presa da `dev/.env` e una password diversa e casuale su Nextcloud, così un accesso riuscito può venire solo dall'app. Va rilanciato dopo ogni modifica al codice dell'app. Nextcloud è su http://localhost:8088, Authentik su http://localhost:9088. L'ambiente spegne la protezione anti-forza bruta di Nextcloud, perché i test sbagliano gli accessi apposta.
 
-**CI** (GitHub Actions): lint, PHPUnit e PHPStan con l'API di Nextcloud 30, 31, 35 e master (PHP 8.1–8.4), validazione di `info.xml` con lo schema dello Store e test completi con Nextcloud 31 e 35.
+**CI** (GitHub Actions): lint, PHPUnit, PHPStan e stile del codice con l'API di Nextcloud 30, 31, 35 e master (PHP 8.1–8.4), validazione di `info.xml` con lo schema dello Store, e test completi e nel browser con Nextcloud 30, 31 e 35, Authentik 2026.5 e 2026.8, SQLite e PostgreSQL. Ogni lunedì la CI gira anche con le ultime versioni di Authentik e Nextcloud, e Dependabot propone gli aggiornamenti delle action e degli strumenti di sviluppo.
 
 **Release**: alza `<version>` in `appinfo/info.xml`, scrivi le novità in `CHANGELOG.md` ed esegui `scripts/release.sh`. Con `NC_CONTAINER=<un container Nextcloud>` firma anche il codice con il certificato dell'app. La chiave privata sta in `~/.nextcloud/certificates/`, mai nel repository.
 

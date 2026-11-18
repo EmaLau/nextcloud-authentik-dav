@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OCA\AuthentikDav\Tests;
@@ -12,6 +13,7 @@ use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -40,6 +42,8 @@ final class BackendTest extends TestCase {
 	private array $admins;
 	/** @var array<string, list<string>> uid => groups */
 	private array $memberships;
+	/** @var array<string, string> uid => personal setting "disabled" */
+	private array $optOut;
 	private bool $distributedCacheUsed;
 	private MemoryLogger $logger;
 
@@ -51,6 +55,7 @@ final class BackendTest extends TestCase {
 		$this->users = ['alice' => true];
 		$this->admins = [];
 		$this->memberships = [];
+		$this->optOut = [];
 		$this->distributedCacheUsed = false;
 		$this->logger = new MemoryLogger();
 	}
@@ -79,7 +84,9 @@ final class BackendTest extends TestCase {
 	private function backend(): Backend {
 		$response = fn (array $json): IResponse => new class($json) implements IResponse {
 			/** @param array<string, mixed> $json */
-			public function __construct(private array $json) {
+			public function __construct(
+				private array $json,
+			) {
 			}
 			public function getBody(): string {
 				return (string)json_encode($this->json);
@@ -153,8 +160,13 @@ final class BackendTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getRemoteAddress')->willReturn('192.0.2.10');
 
+		$ncConfig = $this->createMock(IConfig::class);
+		$ncConfig->method('getUserValue')->willReturnCallback(
+			fn ($uid, $app, $key, $default = '') => $key === 'disabled' ? ($this->optOut[$uid] ?? $default) : $default
+		);
+
 		$config = new Config($appConfig);
-		return new Backend(new AuthentikClient($clientService, $config), $config, $cacheFactory, $groupManager, $userManager, $request, $this->logger);
+		return new Backend(new AuthentikClient($clientService, $config), $config, $cacheFactory, $groupManager, $userManager, $request, $this->logger, $ncConfig);
 	}
 
 	private function assertPasswordNeverLogged(): void {
@@ -229,7 +241,7 @@ final class BackendTest extends TestCase {
 		];
 		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));
 		$this->assertCount(2, $this->calls, 'the password must not be sent to a denied user');
-		$this->assertTrue($this->logger->has('warning', 'Authentik denied access to this user (too many failed attempts?)'));
+		$this->assertTrue($this->logger->has('warning', 'Authentik denied access to this user: Too many failed attempts for this user. Try again later.'));
 	}
 
 	public function testWrongFlowIsRefused(): void {
@@ -428,6 +440,49 @@ final class BackendTest extends TestCase {
 		$this->config['allowed_groups'] = '[]';
 		$this->flowAccepts();
 		$this->assertSame('alice', $this->backend()->checkPassword('alice', self::PASSWORD));
+	}
+
+	public function testUserWhoSwitchedItOffIsRefusedBeforeAskingAuthentik(): void {
+		$this->optOut = ['alice' => 'yes'];
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));
+		$this->assertSame([], $this->calls);
+		$this->assertTrue($this->logger->has('warning', 'the user switched it off in their personal settings'));
+	}
+
+	public function testUserWhoSwitchedItOffIsRefusedEvenWithACachedPassword(): void {
+		$this->flowAccepts();
+		$this->assertSame('alice', $this->backend()->checkPassword('alice', self::PASSWORD));
+		$this->optOut = ['alice' => 'yes'];
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));
+	}
+
+	public function testClientAddressIsForwardedOnlyWhenEnabled(): void {
+		$this->flowAccepts();
+		$this->backend()->checkPassword('alice', self::PASSWORD);
+		$this->assertArrayNotHasKey('X-Forwarded-For', $this->calls[0][2]['headers']);
+
+		$this->config['forward_client_ip'] = 'yes';
+		$this->cacheData = [];
+		$this->flowAccepts();
+		$this->backend()->checkPassword('alice', self::PASSWORD);
+		foreach (array_slice($this->calls, 3) as [, , $options]) {
+			$this->assertSame('192.0.2.10', $options['headers']['X-Forwarded-For']);
+		}
+	}
+
+	public function testDiagnoseExplainsWithoutCacheOrLog(): void {
+		$backend = $this->backend();
+		$this->assertSame('there is no Nextcloud account named "ghost"', $backend->diagnose('ghost', self::PASSWORD));
+		$this->users = ['bob' => false];
+		$this->assertSame('the Nextcloud account is disabled', $this->backend()->diagnose('bob', self::PASSWORD));
+
+		$this->users = ['alice' => true];
+		$this->flowAfterPassword(['component' => 'ak-stage-password']);
+		$this->assertSame('wrong password', $this->backend()->diagnose('alice', self::PASSWORD));
+		$this->flowAccepts();
+		$this->assertNull($this->backend()->diagnose('alice', self::PASSWORD));
+		$this->assertSame([], $this->cacheData, 'diagnose never fills the cache');
+		$this->assertSame([], $this->logger->records, 'diagnose never logs');
 	}
 
 	public function testDisplayNameComesFromTheAccount(): void {

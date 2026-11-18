@@ -30,6 +30,11 @@
 # Unblock a user: Customization -> Reputation scores. Recommended when Nextcloud is reachable
 # from the Internet. Switching it off again: remove
 # the stage binding at order 15 from the flow.
+#
+# Optional Authentik group ("required_group" below, empty by default): only members of this
+# existing Authentik group may use their password in WebDAV; the others are refused after the
+# identification, before their password is checked. It complements "Allowed groups" in Nextcloud,
+# which uses Nextcloud groups. Switching it off again: remove the stage binding at order 16.
 version: 1
 metadata:
   name: Nextcloud WebDAV password check (authentik_dav)
@@ -40,6 +45,7 @@ context:
   flow_slug: nextcloud-webdav-check
   rate_limit: false
   rate_limit_threshold: -5
+  required_group: ""
 entries:
   - model: authentik_flows.flow
     id: flow
@@ -181,4 +187,41 @@ entries:
       policy: !KeyOf reputation
       enabled: true
       negate: false
+      timeout: 30
+
+  # Optional Authentik group (see the top of the file).
+  - model: authentik_stages_deny.denystage
+    id: deny_group
+    conditions:
+      - !Context required_group
+    identifiers:
+      name: !Format ["%s-not-in-group", !Context flow_slug]
+    attrs:
+      deny_message: This account may not use its password in WebDAV clients.
+
+  - model: authentik_flows.flowstagebinding
+    id: deny_group_binding
+    conditions:
+      - !Context required_group
+    identifiers:
+      target: !KeyOf flow
+      order: 16
+    attrs:
+      stage: !KeyOf deny_group
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+      invalid_response_action: retry
+      policy_engine_mode: any
+
+  # A group binding passes for members of the group; negated, the deny stage runs for everyone else.
+  - model: authentik_policies.policybinding
+    conditions:
+      - !Context required_group
+    identifiers:
+      target: !KeyOf deny_group_binding
+      order: 0
+    attrs:
+      group: !Find [authentik_core.group, [name, !Context required_group]]
+      enabled: true
+      negate: true
       timeout: 30

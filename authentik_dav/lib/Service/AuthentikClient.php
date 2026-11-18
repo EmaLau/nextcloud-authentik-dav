@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace OCA\AuthentikDav\Service;
@@ -26,9 +27,11 @@ class AuthentikClient {
 	/**
 	 * Runs the check flow with a username and a password.
 	 *
+	 * @param string $clientIp address of the client that sent the password, passed on to Authentik
+	 *                         in X-Forwarded-For when forward_client_ip=yes
 	 * @return string|null null when the password is accepted, otherwise the reason it was not
 	 */
-	public function check(string $loginName, string $password): ?string {
+	public function check(string $loginName, string $password, string $clientIp = ''): ?string {
 		$problem = $this->config->baseUrlProblem();
 		if ($problem !== null) {
 			return $problem;
@@ -36,6 +39,11 @@ class AuthentikClient {
 		$url = $this->executorUrl();
 		$client = $this->clientService->newClient();
 		$opts = $this->options(self::CHECK_TIMEOUT);
+		if ($clientIp !== '' && $this->config->flag('forward_client_ip')) {
+			// Authentik uses it only if Nextcloud's address is in its trusted proxies
+			// (AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS); otherwise it is ignored.
+			$opts['headers']['X-Forwarded-For'] = $clientIp;
+		}
 		try {
 			$r = $this->decode($client->get($url, $opts));
 			if (($r['component'] ?? '') !== 'ak-stage-identification') {
@@ -43,8 +51,10 @@ class AuthentikClient {
 			}
 			$r = $this->decode($client->post($url, $opts + ['json' => ['component' => 'ak-stage-identification', 'uid_field' => $loginName]]));
 			if (($r['component'] ?? '') === 'ak-stage-access-denied') {
-				// A deny stage after the identification, e.g. the optional limit on failed attempts of the blueprint.
-				return 'Authentik denied access to this user (too many failed attempts?)';
+				// A deny stage after the identification: the optional limit on failed attempts or the
+				// optional Authentik group of the blueprint. Authentik's message says which.
+				$why = is_string($r['error_message'] ?? null) ? trim($r['error_message']) : '';
+				return 'Authentik denied access to this user' . ($why !== '' ? ': ' . $why : '');
 			}
 			if (($r['component'] ?? '') !== 'ak-stage-password') {
 				return 'Authentik did not accept the username';
@@ -72,7 +82,7 @@ class AuthentikClient {
 	 * looks at its first stage. Used by the "Test connection" button and the setup check.
 	 *
 	 * @return array{ok: bool, code: string, detail: string}
-	 *   code: ok | not_configured | bad_url | unreachable | flow_not_found | wrong_first_stage | identification_settings
+	 *                                                       code: ok | not_configured | bad_url | unreachable | flow_not_found | wrong_first_stage | identification_settings
 	 */
 	public function probe(): array {
 		$problem = $this->config->baseUrlProblem();

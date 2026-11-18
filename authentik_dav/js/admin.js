@@ -41,6 +41,7 @@
 			allow_http: form.allow_http.checked,
 			allow_local_address: form.allow_local_address.checked,
 			allow_admins: form.allow_admins.checked,
+			forward_client_ip: form.forward_client_ip.checked,
 		})
 		const call = async (method, path) => {
 			buttons.forEach((b) => { b.disabled = true })
