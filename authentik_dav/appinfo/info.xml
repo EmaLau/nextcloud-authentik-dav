@@ -8,33 +8,27 @@
 	<summary lang="it">Usa la password di Authentik nei client WebDAV, nel Finder, in Esplora risorse e in rclone</summary>
 	<description><![CDATA[When users log in to Nextcloud through **Authentik** (OpenID Connect), WebDAV and other password-based clients cannot follow the browser login: they only send a username and a password. This app lets those clients use the **Authentik password**.
 
-- Nextcloud asks Authentik whether the password is right, through a dedicated Authentik flow (identification and password stages) that creates no session.
+- Nextcloud asks Authentik whether the password is right, through a dedicated Authentik flow (identification, password and MFA check stages) that creates no session.
 - It only checks passwords of **existing** Nextcloud accounts: it creates no users.
 - Users with MFA in Authentik, or with two-factor authentication in Nextcloud, are refused and keep using Nextcloud app passwords.
 - Nextcloud administrators are excluded by default.
 - A correct password is cached for 60 seconds in the local memory cache only. Failed attempts are throttled by Nextcloud and logged with user, address and reason, never the password.
 
-**Setup.** Create the check flow in Authentik (see the project README), then:
+- Optionally, only members of chosen Nextcloud groups can use the Authentik password.
 
-    occ config:app:set authentik_dav base_url --value=https://authentik.example.com
-    occ config:app:set authentik_dav flow_slug --value=nextcloud-webdav-check
-
-If Authentik is on a private address, also set `allow_local_address` to `yes`.]]></description>
+**Setup.** Create the check flow in Authentik with the blueprint included in the project, then enter the Authentik address in *Administration settings → Security* and press *Test connection*. The *Overview* page warns when Authentik cannot be reached or the flow is not right.]]></description>
 	<description lang="it"><![CDATA[Quando gli utenti entrano in Nextcloud tramite **Authentik** (OpenID Connect), i client WebDAV e gli altri client con password non possono seguire il login dal browser: inviano solo nome utente e password. Questa app permette a quei client di usare la **password di Authentik**.
 
-- Nextcloud chiede ad Authentik se la password è giusta, tramite un flow dedicato (stage di identificazione e di password) che non crea sessioni.
+- Nextcloud chiede ad Authentik se la password è giusta, tramite un flow dedicato (stage di identificazione, password e controllo MFA) che non crea sessioni.
 - Controlla solo le password di account Nextcloud **già esistenti**: non crea utenti.
 - Gli utenti con MFA su Authentik, o con l'autenticazione a due fattori su Nextcloud, vengono rifiutati e continuano a usare le password per le app di Nextcloud.
 - Gli amministratori di Nextcloud sono esclusi per default.
 - Una password giusta resta in memoria per 60 secondi, solo nella cache locale. I tentativi falliti sono limitati da Nextcloud e registrati con utente, indirizzo e motivo, mai la password.
 
-**Configurazione.** Crea il flow di controllo su Authentik (vedi il README del progetto), poi:
+- Se vuoi, solo i membri di alcuni gruppi di Nextcloud possono usare la password di Authentik.
 
-    occ config:app:set authentik_dav base_url --value=https://authentik.example.com
-    occ config:app:set authentik_dav flow_slug --value=nextcloud-webdav-check
-
-Se Authentik ha un indirizzo privato, imposta anche `allow_local_address` a `yes`.]]></description>
-	<version>1.0.0</version>
+**Configurazione.** Crea il flow di controllo su Authentik con il blueprint incluso nel progetto, poi inserisci l'indirizzo di Authentik in *Impostazioni di amministrazione → Sicurezza* e premi *Prova connessione*. La pagina *Panoramica* avvisa se Authentik non risponde o se il flow non va bene.]]></description>
+	<version>1.1.0</version>
 	<licence>agpl</licence>
 	<author homepage="https://github.com/EmaLau">EmaLau</author>
 	<namespace>AuthentikDav</namespace>
@@ -49,4 +43,7 @@ Se Authentik ha un indirizzo privato, imposta anche `allow_local_address` a `yes
 		<php min-version="8.1"/>
 		<nextcloud min-version="30" max-version="36"/>
 	</dependencies>
+	<settings>
+		<admin>OCA\AuthentikDav\Settings\Admin</admin>
+	</settings>
 </info>

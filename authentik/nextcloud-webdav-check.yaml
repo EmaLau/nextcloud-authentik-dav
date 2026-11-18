@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=https://goauthentik.io/blueprints/schema.json
+#
+# Authentik blueprint for the authentik_dav Nextcloud app.
+#
+# It creates the password-check flow and three stages used only by this flow:
+#   1. identification: username only (no email), never shows the matched user
+#   2. password: built-in user database only (no app-password tokens, no LDAP, no Kerberos)
+#   3. authenticator validation: users with MFA are refused, users without MFA pass;
+#      the MFA is never "remembered" (threshold 0)
+# There is no User login stage: the flow never creates a session.
+#
+# Apply it once (it is not instantiated automatically):
+#   - Admin interface: Flows and Stages -> Flows -> Import, then choose this file; or
+#     Customization -> Blueprints -> Create, paste this file, save and Apply; or
+#   - copy it to /blueprints/custom/ in the worker container and run
+#       ak apply_blueprint /blueprints/custom/nextcloud-webdav-check.yaml
+#
+# Applying it again resets the flow and the three stages to these settings.
+# To use another slug, change "flow_slug" below; the stage names follow it.
+version: 1
+metadata:
+  name: Nextcloud WebDAV password check (authentik_dav)
+  labels:
+    blueprints.goauthentik.io/instantiate: "false"
+    blueprints.goauthentik.io/description: "Password-check flow for the authentik_dav Nextcloud app"
+context:
+  flow_slug: nextcloud-webdav-check
+entries:
+  - model: authentik_flows.flow
+    id: flow
+    identifiers:
+      slug: !Context flow_slug
+    attrs:
+      name: Nextcloud WebDAV password check
+      title: Nextcloud WebDAV
+      designation: authentication
+      authentication: none
+      denied_action: message
+      policy_engine_mode: any
+      compatibility_mode: false
+      layout: stacked
+
+  - model: authentik_stages_identification.identificationstage
+    id: identification
+    identifiers:
+      name: !Format ["%s-identification", !Context flow_slug]
+    attrs:
+      user_fields:
+        - username
+      case_insensitive_matching: true
+      show_matched_user: false
+      pretend_user_exists: true
+      enable_remember_me: false
+      show_source_labels: false
+      sources: []
+      password_stage: null
+      captcha_stage: null
+      enrollment_flow: null
+      recovery_flow: null
+      passwordless_flow: null
+
+  - model: authentik_stages_password.passwordstage
+    id: password
+    identifiers:
+      name: !Format ["%s-password", !Context flow_slug]
+    attrs:
+      backends:
+        - authentik.core.auth.InbuiltBackend
+      failed_attempts_before_cancel: 5
+      allow_show_password: false
+      configure_flow: null
+
+  - model: authentik_stages_authenticator_validate.authenticatorvalidatestage
+    id: mfa
+    identifiers:
+      name: !Format ["%s-mfa-validation", !Context flow_slug]
+    attrs:
+      not_configured_action: skip
+      device_classes:
+        - static
+        - totp
+        - webauthn
+        - duo
+        - sms
+        - email
+      last_auth_threshold: seconds=0
+      configuration_stages: []
+
+  # Bindings are identified by flow and order, so applying the blueprint again
+  # re-links these stages even if someone changed a binding by hand.
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow
+      order: 10
+    attrs:
+      stage: !KeyOf identification
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+      invalid_response_action: retry
+      policy_engine_mode: any
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow
+      order: 20
+    attrs:
+      stage: !KeyOf password
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+      invalid_response_action: retry
+      policy_engine_mode: any
+
+  - model: authentik_flows.flowstagebinding
+    identifiers:
+      target: !KeyOf flow
+      order: 30
+    attrs:
+      stage: !KeyOf mfa
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+      invalid_response_action: retry
+      policy_engine_mode: any

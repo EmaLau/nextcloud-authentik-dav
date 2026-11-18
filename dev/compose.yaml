@@ -1,0 +1,62 @@
+# Local development environment: Authentik + Nextcloud with the app mounted.
+#   cp dev/.env.example dev/.env    # then put random values in it
+#   docker compose -f dev/compose.yaml --env-file dev/.env up -d
+#   dev/setup.sh                    # applies the blueprint, enables the app, creates test users
+# Nextcloud: http://localhost:8088 · Authentik: http://localhost:9088
+# Throw-away data only: "docker compose -f dev/compose.yaml down -v" deletes everything.
+name: authentik-dav-dev
+services:
+  postgresql:
+    image: docker.io/library/postgres:16-alpine
+    environment:
+      POSTGRES_DB: authentik
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: ${PG_PASS:?set PG_PASS in dev/.env}
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d authentik -U authentik"]
+      interval: 5s
+      retries: 20
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_TAG:-2026.8.5}
+    command: server
+    environment: &ak-env
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?set AUTHENTIK_SECRET_KEY in dev/.env}
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AK_ADMIN_PASS:?set AK_ADMIN_PASS in dev/.env}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AK_TOKEN:?set AK_TOKEN in dev/.env}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+      AUTHENTIK_DISABLE_STARTUP_ANALYTICS: "true"
+    ports: ["127.0.0.1:9088:9000"]
+    volumes: [../authentik:/blueprints/custom:ro]
+    depends_on:
+      postgresql: {condition: service_healthy}
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_TAG:-2026.8.5}
+    command: worker
+    environment: *ak-env
+    volumes: [../authentik:/blueprints/custom:ro]
+    depends_on:
+      postgresql: {condition: service_healthy}
+
+  nextcloud:
+    image: docker.io/library/nextcloud:${NEXTCLOUD_TAG:-35-apache}
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: ${NC_ADMIN_PASS:?set NC_ADMIN_PASS in dev/.env}
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost nextcloud
+    ports: ["127.0.0.1:8088:80"]
+    volumes:
+      - nc:/var/www/html
+      - ../authentik_dav:/var/www/html/custom_apps/authentik_dav:ro
+
+volumes:
+  db:
+  nc:

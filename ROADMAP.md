@@ -1,8 +1,8 @@
 # Roadmap
 
-Where this project is going. Items move from top to bottom; each release gets its own entry in a future `CHANGELOG.md`.
+Where this project is going. Items move from top to bottom; each release gets its own entry in [CHANGELOG.md](CHANGELOG.md).
 
-**Status:** 1.0 released on 18 November 2026, after a security review of the code and of the Authentik flow. Runs on one homelab (Nextcloud 35, Authentik 2026.8).
+**Status:** 1.1 released on 18 November 2026 (1.0 the same day, after a security review of the code and of the Authentik flow). Runs on one homelab (Nextcloud 35, Authentik 2026.8). Changes: [CHANGELOG](CHANGELOG.md).
 
 ## 1.0 — first public release
 
@@ -18,21 +18,23 @@ Where this project is going. Items move from top to bottom; each release gets it
 ### Packaging and tests
 
 - [x] `info.xml`: real author, repository and bug tracker URLs, Nextcloud 30–36 declared; CI runs the tests against the API of 30, 31, 35 and 36 (master) and validates `info.xml` against the App Store schema.
-- [ ] When Nextcloud 36 is released: run the app on a real 36 instance and switch the CI from `dev-master` to `dev-stable36`.
 - [x] **PHPUnit tests** with a mocked Authentik (scripted flow executor answers): right password, wrong password, Authentik down, timeout, cache hit, admin refused when `allow_admins=no`.
 - [x] **CI** on GitHub Actions: `php -l`, PHPUnit and PHPStan (level 6) on PHP 8.1–8.4.
 - [x] **Screenshots** of the Authentik flow and of a WebDAV client logging in.
 - [x] Publish: make the repository public, social preview (`docs/social-preview.png`), link from the GitHub profile README and the Homelab page of emalau.it, tag `v1.0.0`.
 
-## Next — features to add after 1.0
+## 1.1 — released on 18 November 2026
 
-In order of priority.
+- [x] **Authentik blueprint** that creates the check flow and its stages in one step.
+- [x] **Admin settings page** in Nextcloud, with a "Test connection" button.
+- [x] **Group allowlist**: accept Authentik passwords only for members of chosen Nextcloud groups.
+- [x] **Setup check** in the Nextcloud admin overview: warns when Authentik is unreachable or the flow is not right.
+- [x] End-to-end tests with a real Authentik and a real Nextcloud in CI.
+- [ ] **Nextcloud App Store**: release script ready (`scripts/release.sh`); waiting for the code-signing certificate from [nextcloud/app-certificate-requests](https://github.com/nextcloud/app-certificate-requests), then register the app and upload the signed 1.1.0.
 
-1. **Authentik blueprint**: a YAML blueprint that creates the check flow and its stages in one step, instead of building it by hand.
-2. **Admin settings page** in Nextcloud (instead of `occ config:app:set`), with a "test connection" button.
-3. **Group allowlist**: accept Authentik passwords only for members of a chosen Nextcloud group.
-4. **Setup check** in the Nextcloud admin overview: warns when Authentik is unreachable or the flow slug is wrong.
-5. **Nextcloud App Store** publication (same process as Universal Converter: certificate, signed releases).
+## Waiting for Nextcloud 36
+
+- [ ] When Nextcloud 36 is released: run the app on a real 36 instance (`NEXTCLOUD_TAG=36-apache` in the end-to-end tests) and switch the CI from `dev-master` to `dev-stable36`.
 
 ## Maybe later
 

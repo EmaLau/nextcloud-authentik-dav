@@ -1,0 +1,15 @@
+#authentik-dav-settings .authentik-dav-field { margin: 14px 0; max-width: 560px; }
+#authentik-dav-settings .authentik-dav-field > label,
+#authentik-dav-settings legend { display: block; font-weight: bold; margin-bottom: 4px; }
+#authentik-dav-settings input[type="url"],
+#authentik-dav-settings input[type="text"] { width: 100%; max-width: 420px; }
+#authentik-dav-settings input[type="number"] { width: 120px; }
+#authentik-dav-settings select[multiple] { width: 100%; max-width: 420px; min-height: 90px; }
+#authentik-dav-settings fieldset p { margin: 6px 0; }
+#authentik-dav-settings .authentik-dav-hint { color: var(--color-text-maxcontrast); margin-top: 4px; }
+#authentik-dav-settings .authentik-dav-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+#authentik-dav-status { margin-left: 4px; }
+#authentik-dav-status.authentik-dav-status-ok { color: var(--color-success-text, var(--color-success)); }
+#authentik-dav-status.authentik-dav-status-error { color: var(--color-error-text, var(--color-error)); }
+#authentik-dav-status.authentik-dav-status-busy { color: var(--color-text-maxcontrast); }
+#authentik-dav-settings select[multiple] { background-image: none; padding: 4px; }

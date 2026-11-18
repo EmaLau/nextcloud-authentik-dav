@@ -56,3 +56,47 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
           curl -fsSL https://apps.nextcloud.com/schema/apps/info.xsd -o info.xsd
           xmllint --noout --schema info.xsd authentik_dav/appinfo/info.xml
+
+  e2e:
+    name: End to end (Authentik ${{ matrix.authentik }}, Nextcloud ${{ matrix.nextcloud }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { authentik: '2026.8.5', nextcloud: '35-apache' }
+          - { authentik: '2026.8.5', nextcloud: '31-apache' }
+    env:
+      AUTHENTIK_TAG: ${{ matrix.authentik }}
+      NEXTCLOUD_TAG: ${{ matrix.nextcloud }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Random test secrets
+        run: |
+          for k in PG_PASS AUTHENTIK_SECRET_KEY AK_ADMIN_PASS AK_TOKEN NC_ADMIN_PASS TEST_USER_PASS; do
+            echo "$k=$(openssl rand -hex 24)"
+          done > dev/.env
+
+      - name: Start Authentik and Nextcloud
+        run: docker compose -f dev/compose.yaml --env-file dev/.env up -d --wait --wait-timeout 300
+
+      - name: Wait for Nextcloud to finish installing
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8088/status.php | grep -q '"installed":true' && exit 0
+            sleep 5
+          done
+          exit 1
+
+      - name: Apply the blueprint, create test users, configure the app
+        run: dev/setup.sh
+
+      - name: End-to-end checks
+        run: dev/test.sh
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          docker compose -f dev/compose.yaml --env-file dev/.env logs --tail 200
+          docker compose -f dev/compose.yaml --env-file dev/.env exec -T -u www-data nextcloud php occ log:tail 50 || true

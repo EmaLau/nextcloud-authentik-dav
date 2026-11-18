@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace OCA\AuthentikDav\AppInfo;
 
 use OCA\AuthentikDav\Backend;
+use OCA\AuthentikDav\SetupCheck\AuthentikConnection;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -18,6 +19,8 @@ class Application extends App implements IBootstrap {
 	}
 
 	public function register(IRegistrationContext $context): void {
+		// Administration settings → Overview: warns when Authentik or the check flow is not right.
+		$context->registerSetupCheck(AuthentikConnection::class);
 	}
 
 	public function boot(IBootContext $context): void {

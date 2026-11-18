@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace OCA\AuthentikDav\Tests;
 
 use OCA\AuthentikDav\Backend;
+use OCA\AuthentikDav\Service\AuthentikClient;
+use OCA\AuthentikDav\Service\Config;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -36,6 +38,8 @@ final class BackendTest extends TestCase {
 	private array $users;
 	/** @var list<string> */
 	private array $admins;
+	/** @var array<string, list<string>> uid => groups */
+	private array $memberships;
 	private bool $distributedCacheUsed;
 	private MemoryLogger $logger;
 
@@ -46,6 +50,7 @@ final class BackendTest extends TestCase {
 		$this->cacheData = [];
 		$this->users = ['alice' => true];
 		$this->admins = [];
+		$this->memberships = [];
 		$this->distributedCacheUsed = false;
 		$this->logger = new MemoryLogger();
 	}
@@ -131,6 +136,7 @@ final class BackendTest extends TestCase {
 
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('isAdmin')->willReturnCallback(fn ($uid) => in_array($uid, $this->admins, true));
+		$groupManager->method('isInGroup')->willReturnCallback(fn ($uid, $gid) => in_array($gid, $this->memberships[$uid] ?? [], true));
 
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('get')->willReturnCallback(function ($uid) {
@@ -147,7 +153,8 @@ final class BackendTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getRemoteAddress')->willReturn('192.0.2.10');
 
-		return new Backend($clientService, $cacheFactory, $appConfig, $groupManager, $userManager, $request, $this->logger);
+		$config = new Config($appConfig);
+		return new Backend(new AuthentikClient($clientService, $config), $config, $cacheFactory, $groupManager, $userManager, $request, $this->logger);
 	}
 
 	private function assertPasswordNeverLogged(): void {
@@ -284,6 +291,30 @@ final class BackendTest extends TestCase {
 		$this->assertSame([], $this->cacheData);
 	}
 
+	public function testCacheTtlZeroIgnoresPasswordsCachedBefore(): void {
+		$this->flowAccepts();
+		$this->backend()->checkPassword('alice', self::PASSWORD);
+		$this->config['cache_ttl'] = 0;
+		$this->flowAfterPassword(['component' => 'ak-stage-password']);
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD), 'with cache_ttl=0 every request reaches Authentik');
+	}
+
+	public function testChangingTheSettingsInvalidatesCachedPasswords(): void {
+		$this->config['base_url'] = 'http://auth.example.com';
+		$this->config['allow_http'] = 'yes';
+		$this->flowAccepts();
+		$this->assertSame('alice', $this->backend()->checkPassword('alice', self::PASSWORD));
+
+		$this->config['allow_http'] = 'no';
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD), 'a cached password must not survive allow_http being switched off');
+		$this->assertCount(3, $this->calls);
+
+		$this->config['allow_http'] = 'yes';
+		$this->config['flow_slug'] = 'another-flow';
+		$this->flowAfterPassword(['component' => 'ak-stage-password']);
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD), 'another flow must check the password again');
+	}
+
 	public function testAdminIsRefusedByDefault(): void {
 		$this->admins = ['alice'];
 		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));
@@ -362,6 +393,31 @@ final class BackendTest extends TestCase {
 		$this->flowAccepts();
 		$this->backend()->checkPassword('alice', self::PASSWORD);
 		$this->assertSame('https://auth.example.com/api/v3/flows/executor/my%20flow%2F..%2Fx/?query=', $this->calls[0][1]);
+	}
+
+	public function testAllowedGroupsAreEnforcedBeforeAskingAuthentik(): void {
+		$this->config['allowed_groups'] = '["webdav","friends"]';
+		$this->memberships = ['alice' => ['other']];
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));
+		$this->assertSame([], $this->calls, 'a user outside the allowed groups must not reach Authentik');
+		$this->assertTrue($this->logger->has('warning', "login failed for user 'alice' from '192.0.2.10': not in an allowed group"));
+
+		$this->memberships = ['alice' => ['friends']];
+		$this->flowAccepts();
+		$this->assertSame('alice', $this->backend()->checkPassword('alice', self::PASSWORD));
+	}
+
+	public function testAllowedGroupsAcceptACommaSeparatedList(): void {
+		$this->config['allowed_groups'] = ' webdav , friends ';
+		$this->memberships = ['alice' => ['webdav']];
+		$this->flowAccepts();
+		$this->assertSame('alice', $this->backend()->checkPassword('alice', self::PASSWORD));
+	}
+
+	public function testNoAllowedGroupsMeansEveryAccount(): void {
+		$this->config['allowed_groups'] = '[]';
+		$this->flowAccepts();
+		$this->assertSame('alice', $this->backend()->checkPassword('alice', self::PASSWORD));
 	}
 
 	public function testDisplayNameComesFromTheAccount(): void {
