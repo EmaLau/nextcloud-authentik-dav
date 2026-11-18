@@ -47,6 +47,14 @@ Create a flow (for example `nextcloud-webdav-check`, designation *Authentication
 
 Do **not** add a *User login* stage: the flow must not create a session.
 
+Use **stages of its own**, not the ones of the default login flow: otherwise a change to the web login also changes WebDAV. For example, "remember MFA for 12 hours" on the shared validation stage would let users with MFA in with the password alone. Recommended settings:
+
+| Stage | Setting |
+|---|---|
+| Identification | user fields: *username* only |
+| Password | backend: the built-in user database only (`InbuiltBackend`) (no app-password tokens, no LDAP or Kerberos unless you use them) |
+| Authenticator validation | not configured action: *skip*; last validation threshold: `seconds=0` |
+
 ### 2. The Nextcloud app
 
 ```bash
