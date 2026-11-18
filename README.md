@@ -13,8 +13,19 @@ This small Nextcloud app lets WebDAV and other password-based clients use the **
 - It is a **password-only user backend**: it owns no users. Accounts stay in Nextcloud's database backend, and the app only answers "is this the right password for this existing account?".
 - For each check it runs a dedicated Authentik flow through the flow executor API: identification stage → password stage. The password is accepted only if the flow finishes.
 - If the user has MFA configured in Authentik, the flow asks for the second factor, and the check **fails**: those users keep using Nextcloud app passwords for WebDAV.
+- If the user has two-factor authentication enabled **in Nextcloud**, Nextcloud itself refuses every password login from clients, whatever the backend: those users need Nextcloud app passwords too.
 - Nextcloud administrators are excluded by default.
-- A correct password is cached (as a `password_hash`) for a few minutes, so a WebDAV client does not hit Authentik at every request. A password change in Authentik takes effect at most after the cache time.
+- A correct password is cached (as a `password_hash`) for 60 seconds by default, so a WebDAV client does not hit Authentik at every request. The cache is **local to the server** (APCu): nothing derived from the password is stored in Redis or Memcached. Without a local memory cache configured, every request is checked against Authentik. A password change in Authentik takes effect at most after the cache time.
+
+## Security notes
+
+- **Brute force**: failed attempts are throttled by Nextcloud's own brute-force protection. Every client login goes through `OC\User\Session::logClientIn()`, which slows down and then blocks an IP address after repeated failures, for all user backends.
+- **Failed attempts are logged** at warning level, with user, client address and reason, never the password:
+  `authentik_dav: login failed for user 'alice' from '192.0.2.10': wrong password`.
+  Nextcloud also logs its own `Login failed: 'alice' (Remote IP: '192.0.2.10')` line, which fail2ban filters for Nextcloud already match.
+- **Plain HTTP is refused**: `base_url` must use `https://`, unless `allow_http=yes` is set (only for Authentik on the same host or a trusted network).
+- **Local addresses are refused** by Nextcloud's HTTP client unless `allow_local_address=yes`: set it only when Authentik runs on a private address.
+- The check flow must only check the password. Each check uses a fresh cookie jar that is thrown away, so even a session created by mistake is never reused.
 
 ## Requirements
 
@@ -42,6 +53,8 @@ chown -R www-data:www-data /var/www/html/custom_apps/authentik_dav
 occ app:enable authentik_dav
 occ config:app:set authentik_dav base_url --value=https://authentik.example.com
 occ config:app:set authentik_dav flow_slug --value=nextcloud-webdav-check
+# only if Authentik is on a private address (LAN, Docker network):
+occ config:app:set authentik_dav allow_local_address --value=yes
 ```
 
 With Docker: `docker exec -u 33 <nextcloud-container> php occ ...`.
@@ -59,8 +72,10 @@ curl -u alice:'her-authentik-password' -X PROPFIND \
 |---|---|---|
 | `base_url` | — (required) | Authentik base URL, as seen from the Nextcloud server |
 | `flow_slug` | `nextcloud-webdav-check` | Slug of the check flow |
-| `cache_ttl` | `300` | Seconds a correct password stays cached (`0` disables the cache) |
+| `cache_ttl` | `60` | Seconds a correct password stays cached in the local memory cache (`0` disables the cache) |
 | `allow_admins` | `no` | `yes` to accept Authentik passwords for Nextcloud admins too |
+| `allow_local_address` | `no` | `yes` when Authentik is on a private address (LAN, Docker network) |
+| `allow_http` | `no` | `yes` to allow a plain-HTTP `base_url` (not recommended) |
 
 Disable the app: `occ app:disable authentik_dav`.
 

@@ -8,11 +8,11 @@ Where this project is going. Items move from top to bottom; each release gets it
 
 ### Security review
 
-- [ ] **Brute force**: check how Nextcloud's brute-force protection applies to this backend; if it does not, use the throttler (`OCP\Security\Bruteforce\IThrottler`) for failed attempts.
-- [ ] **Cache**: memory-only cache (no distributed cache for password results) and a shorter default TTL; document the trade-off between Authentik load and how fast a changed password takes effect.
-- [ ] `allow_local_address` is always on: make it a **setting**, off unless Authentik is on a private address.
-- [ ] **Refuse a plain-HTTP `base_url`** unless `allow_http` is set explicitly.
-- [ ] **Log failed attempts** with user, client address and reason, in a format fail2ban-style tools can parse, without ever logging the password.
+- [x] **Brute force**: already covered by Nextcloud: `OC\User\Session::logClientIn()` throttles failed client logins per IP for every backend. Documented in the README.
+- [x] **Cache**: memory-only cache (no distributed cache for password results) and a shorter default TTL (local APCu cache, 60 s); document the trade-off between Authentik load and how fast a changed password takes effect.
+- [x] `allow_local_address` is always on: make it a **setting**, off unless Authentik is on a private address.
+- [x] **Refuse a plain-HTTP `base_url`** unless `allow_http` is set explicitly.
+- [x] **Log failed attempts** with user, client address and reason, in a format fail2ban-style tools can parse, without ever logging the password.
 - [ ] Review the Authentik flow itself: it must only check the password, never create a session or grant access to anything else.
 
 ### Packaging and tests
