@@ -15,3 +15,8 @@ updates:
     # Only development tools: the app itself has no Composer dependencies.
     ignore:
       - dependency-name: nextcloud/ocp   # pinned per Nextcloud version by the CI matrix
+      # Must match what Nextcloud bundles (Guzzle 7) and run on PHP 8.1 (PHPUnit 10).
+      - dependency-name: guzzlehttp/guzzle
+        update-types: ["version-update:semver-major"]
+      - dependency-name: phpunit/phpunit
+        update-types: ["version-update:semver-major"]
