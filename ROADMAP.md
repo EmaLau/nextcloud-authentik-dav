@@ -2,7 +2,7 @@
 
 Where this project is going. Items move from top to bottom; each release gets its own entry in a future `CHANGELOG.md`.
 
-**Status:** works on one homelab (Nextcloud + Authentik), private repository. It handles passwords, so it goes public only after a security review. **Target for 1.0: end of May 2027.**
+**Status:** 1.0 released on 18 November 2026, after a security review of the code and of the Authentik flow. Runs on one homelab (Nextcloud 35, Authentik 2026.8).
 
 ## 1.0 — first public release
 
@@ -13,7 +13,7 @@ Where this project is going. Items move from top to bottom; each release gets it
 - [x] `allow_local_address` is always on: make it a **setting**, off unless Authentik is on a private address.
 - [x] **Refuse a plain-HTTP `base_url`** unless `allow_http` is set explicitly.
 - [x] **Log failed attempts** with user, client address and reason, in a format fail2ban-style tools can parse, without ever logging the password.
-- [ ] Review the Authentik flow itself: it must only check the password, never create a session or grant access to anything else.
+- [x] Review the Authentik flow itself: it must only check the password, never create a session or grant access to anything else. Checked on a live Authentik: no User login stage, no session after the flow; the flow now uses **stages of its own** (username only, built-in password database only, MFA threshold 0), so changes to the web login do not affect it. Tested end to end with a test user: right password accepted, wrong password refused, user with MFA refused, cache expiring after 60 s.
 
 ### Packaging and tests
 
@@ -21,8 +21,8 @@ Where this project is going. Items move from top to bottom; each release gets it
 - [ ] When Nextcloud 36 is released: run the app on a real 36 instance and switch the CI from `dev-master` to `dev-stable36`.
 - [x] **PHPUnit tests** with a mocked Authentik (scripted flow executor answers): right password, wrong password, Authentik down, timeout, cache hit, admin refused when `allow_admins=no`.
 - [x] **CI** on GitHub Actions: `php -l`, PHPUnit and PHPStan (level 6) on PHP 8.1–8.4.
-- [ ] **Screenshots** of the Authentik flow and of a WebDAV client logging in.
-- [ ] Publish: make the repository public, social preview (`docs/social-preview.png`), link from the GitHub profile README and the Homelab page of emalau.it, tag `v1.0.0`.
+- [x] **Screenshots** of the Authentik flow and of a WebDAV client logging in.
+- [x] Publish: make the repository public, social preview (`docs/social-preview.png`), link from the GitHub profile README and the Homelab page of emalau.it, tag `v1.0.0`.
 
 ## Next — features to add after 1.0
 

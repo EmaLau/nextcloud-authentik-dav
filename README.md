@@ -4,7 +4,7 @@
 
 <p align="center"><img src="docs/cover.svg" width="400" alt=""></p>
 
-> **Work in progress — private repository.** It runs on one homelab; a security review is needed before publishing. See [the roadmap](ROADMAP.md).
+> **Version 1.0.** It runs on one homelab (Nextcloud 35, Authentik 2026.8) and went through a security review of the code and of the Authentik flow. See [the roadmap](ROADMAP.md) for what comes next.
 
 When Nextcloud users log in through **Authentik** (OpenID Connect), the web login works, but WebDAV clients (Finder, Windows Explorer, rclone, file managers) cannot do the OIDC dance: they only send a username and a password. Users then need a separate Nextcloud app password, or a second local password.
 
@@ -18,6 +18,27 @@ This small Nextcloud app lets WebDAV and other password-based clients use the **
 - If the user has two-factor authentication enabled **in Nextcloud**, Nextcloud itself refuses every password login from clients, whatever the backend: those users need Nextcloud app passwords too.
 - Nextcloud administrators are excluded by default.
 - A correct password is cached (as a `password_hash`) for 60 seconds by default, so a WebDAV client does not hit Authentik at every request. The cache is **local to the server** (APCu): nothing derived from the password is stored in Redis or Memcached. Without a local memory cache configured, every request is checked against Authentik. A password change in Authentik takes effect at most after the cache time.
+
+## Screenshots
+
+The check flow in Authentik, with its own identification stage (username only):
+
+<p align="center"><img src="docs/authentik-flow.png" width="500" alt="The Nextcloud WebDAV flow in Authentik asking for a username"></p>
+
+rclone, a WebDAV client, logging in to Nextcloud with the Authentik password of a test user (password and URL hidden):
+
+<p align="center"><img src="docs/webdav-client.png" alt="rclone listing, writing and reading files over WebDAV"></p>
+
+The flow, as Authentik draws it:
+
+```mermaid
+graph TD
+  flow_start[["Flow<br>Nextcloud WebDAV password check"]]
+  --> stage_0(["Identification stage<br>nextcloud-webdav-identification"])
+  --> stage_1(["Password stage<br>nextcloud-webdav-password"])
+  --> stage_2(["Authenticator validation stage<br>nextcloud-webdav-mfa-validation"])
+  stage_2 --> done[["End of the flow"]]
+```
 
 ## Security notes
 
