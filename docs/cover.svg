@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a2a2e"/><stop offset=".7" stop-color="#161618"/></linearGradient></defs>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b1430"/><stop offset=".7" stop-color="#121216"/></linearGradient></defs>
   <rect width="400" height="300" rx="20" fill="url(#bg)" stroke="none"/>
   <defs>
-    <radialGradient id="g" cx="62%" cy="45%" r="55%"><stop offset="0" stop-color="#a1a1aa" stop-opacity=".28"/><stop offset="1" stop-color="#a1a1aa" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g" cx="62%" cy="45%" r="55%"><stop offset="0" stop-color="#7c3aed" stop-opacity=".35"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></radialGradient>
   </defs>
   <rect width="400" height="300" fill="url(#g)" stroke="none"/>
   <!-- client WebDAV -->
@@ -15,7 +15,7 @@
     <path d="M100 214 H130 Q144 214 144 200 V162 H170"/>
   </g>
   <!-- Nextcloud -->
-  <rect x="170" y="56" width="196" height="188" rx="18" fill="#1f1f23" fill-opacity=".6" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.8"/>
+  <rect x="170" y="56" width="196" height="188" rx="18" fill="#1b1430" fill-opacity=".55" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.8"/>
   <path d="M222 132 a22 22 0 0 1 42 -8 a18 18 0 0 1 30 14 a16 16 0 0 1 -4 32 h-64 a20 20 0 0 1 -4 -38 z" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.8"/>
   <!-- password -->
   <g fill="#ffcc00" stroke="none"><circle cx="232" cy="206" r="3.5"/><circle cx="246" cy="206" r="3.5"/><circle cx="260" cy="206" r="3.5"/><circle cx="274" cy="206" r="3.5"/></g>
