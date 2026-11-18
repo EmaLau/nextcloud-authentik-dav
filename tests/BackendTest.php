@@ -26,13 +26,15 @@ final class BackendTest extends TestCase {
 
 	/** @var array<string, string|int> */
 	private array $config;
-	/** Scripted Authentik answers: a decoded JSON array, or a \Throwable to throw. */
+	/** @var list<array<string, mixed>|\Throwable> Scripted Authentik answers: decoded JSON, or an exception to throw. */
 	private array $answers;
-	/** Every HTTP call made: [method, url, options]. */
+	/** @var list<array{0: string, 1: string, 2: array<string, mixed>}> Every HTTP call made: [method, url, options]. */
 	private array $calls;
-	/** In-memory local cache: key => [value, ttl]. */
+	/** @var array<string, array{0: mixed, 1: int}> In-memory local cache: key => [value, ttl]. */
 	private array $cacheData;
+	/** @var array<string, bool> Nextcloud accounts: uid => enabled. */
 	private array $users;
+	/** @var list<string> */
 	private array $admins;
 	private bool $distributedCacheUsed;
 	private MemoryLogger $logger;
@@ -58,6 +60,7 @@ final class BackendTest extends TestCase {
 		];
 	}
 
+	/** @param array<string, mixed> $answer */
 	private function flowAfterPassword(array $answer): void {
 		$this->answers = [
 			['component' => 'ak-stage-identification'],
@@ -70,10 +73,11 @@ final class BackendTest extends TestCase {
 
 	private function backend(): Backend {
 		$response = fn (array $json): IResponse => new class($json) implements IResponse {
+			/** @param array<string, mixed> $json */
 			public function __construct(private array $json) {
 			}
-			public function getBody() {
-				return json_encode($this->json);
+			public function getBody(): string {
+				return (string)json_encode($this->json);
 			}
 			public function getStatusCode(): int {
 				return 200;
@@ -81,6 +85,7 @@ final class BackendTest extends TestCase {
 			public function getHeader(string $key): string {
 				return '';
 			}
+			/** @return array<string, string[]> */
 			public function getHeaders(): array {
 				return [];
 			}
@@ -135,6 +140,7 @@ final class BackendTest extends TestCase {
 			$user = $this->createMock(IUser::class);
 			$user->method('getUID')->willReturn($uid);
 			$user->method('isEnabled')->willReturn($this->users[$uid]);
+			$user->method('getDisplayName')->willReturn(ucfirst($uid));
 			return $user;
 		});
 
@@ -356,6 +362,11 @@ final class BackendTest extends TestCase {
 		$this->flowAccepts();
 		$this->backend()->checkPassword('alice', self::PASSWORD);
 		$this->assertSame('https://auth.example.com/api/v3/flows/executor/my%20flow%2F..%2Fx/?query=', $this->calls[0][1]);
+	}
+
+	public function testDisplayNameComesFromTheAccount(): void {
+		$this->assertSame('Alice', $this->backend()->getDisplayName('alice'));
+		$this->assertSame('ghost', $this->backend()->getDisplayName('ghost'));
 	}
 
 	public function testBackendOwnsNoUsers(): void {

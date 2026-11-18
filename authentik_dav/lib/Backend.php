@@ -154,12 +154,8 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 	}
 
 	public function getDisplayName($uid): string {
-		foreach ($this->userManager->getBackends() as $backend) {
-			if ($backend instanceof \OC\User\Database) {
-				return $backend->getDisplayName($uid);
-			}
-		}
-		return (string)$uid;
+		// The account belongs to another backend (usually the database): ask it through the public API.
+		return $this->userManager->get((string)$uid)?->getDisplayName() ?? (string)$uid;
 	}
 
 	public function deleteUser($uid) {
@@ -174,6 +170,7 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 		return false;
 	}
 
+	/** @return array<string, string> */
 	public function getDisplayNames($search = '', $limit = null, $offset = null) {
 		return [];
 	}

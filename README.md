@@ -1,5 +1,7 @@
 # Authentik password login for Nextcloud WebDAV
 
+[![CI](https://github.com/EmaLau/nextcloud-authentik-dav/actions/workflows/ci.yml/badge.svg)](https://github.com/EmaLau/nextcloud-authentik-dav/actions/workflows/ci.yml)
+
 <p align="center"><img src="docs/cover.svg" width="400" alt=""></p>
 
 > **Work in progress — private repository.** It runs on one homelab; a security review is needed before publishing. See [the roadmap](ROADMAP.md).
@@ -87,7 +89,10 @@ The app has no runtime dependencies. Composer is used only for the tests, which 
 composer install
 composer test      # PHPUnit
 composer lint      # php -l on every file
+composer analyse   # PHPStan, level 6
 ```
+
+GitHub Actions runs all three on PHP 8.1–8.4 at every push and pull request.
 
 Without PHP on the machine: `docker run --rm -v "$PWD:/app" -w /app composer:2 sh -c 'composer install && composer test'`.
 
