@@ -19,6 +19,8 @@ OUT="$ROOT/dist/$APP-$VER.tar.gz"
 STAGE=$(mktemp -d); trap 'rm -rf "$STAGE"' EXIT
 mkdir "$STAGE/$APP"
 tar --no-xattrs -C "$ROOT/$APP" --exclude .DS_Store --exclude '._*' -cf - . | tar -xf - -C "$STAGE/$APP"
+# The App Store shows the CHANGELOG.md found in the app folder: copy the one of the repository.
+cp "$ROOT/CHANGELOG.md" "$STAGE/$APP/CHANGELOG.md"
 
 if [ -n "${NC_CONTAINER:-}" ] && [ -f "$CRT" ] && [ -f "$KEY" ]; then
   T=/tmp/$APP-sign

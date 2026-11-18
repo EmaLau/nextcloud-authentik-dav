@@ -44,6 +44,9 @@
 	<website>https://github.com/EmaLau/nextcloud-authentik-dav</website>
 	<bugs>https://github.com/EmaLau/nextcloud-authentik-dav/issues</bugs>
 	<repository type="git">https://github.com/EmaLau/nextcloud-authentik-dav.git</repository>
+	<screenshot small-thumbnail="https://raw.githubusercontent.com/EmaLau/nextcloud-authentik-dav/main/docs/admin-settings.png">https://raw.githubusercontent.com/EmaLau/nextcloud-authentik-dav/main/docs/admin-settings.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/EmaLau/nextcloud-authentik-dav/main/docs/webdav-client.png</screenshot>
+	<screenshot>https://raw.githubusercontent.com/EmaLau/nextcloud-authentik-dav/main/docs/authentik-flow.png</screenshot>
 	<dependencies>
 		<php min-version="8.1"/>
 		<nextcloud min-version="30" max-version="36"/>

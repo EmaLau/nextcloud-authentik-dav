@@ -6,6 +6,8 @@
 
 - Full documentation in English and Italian (`docs/documentation.md`, `docs/documentazione.md`) and Italian README.
 - `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates.
+- App icon (`img/app.svg`, `img/app-dark.svg`), screenshots and documentation links in `info.xml` for the App Store.
+- Release archives include `CHANGELOG.md`, which the App Store shows.
 
 ## 1.1.0 — 2026-11-18
 
