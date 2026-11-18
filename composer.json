@@ -1,0 +1,27 @@
+{
+	"name": "emalau/nextcloud-authentik-dav",
+	"description": "Development tools for the authentik_dav Nextcloud app (tests only; the app itself has no Composer dependencies)",
+	"license": "AGPL-3.0-or-later",
+	"type": "project",
+	"require-dev": {
+		"php": ">=8.1",
+		"guzzlehttp/guzzle": "^7.8",
+		"nextcloud/ocp": "dev-stable31",
+		"phpunit/phpunit": "^10.5"
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"OCA\\AuthentikDav\\": "authentik_dav/lib/",
+			"OCA\\AuthentikDav\\Tests\\": "tests/",
+			"OCP\\": "vendor/nextcloud/ocp/OCP/",
+			"NCU\\": "vendor/nextcloud/ocp/NCU/"
+		}
+	},
+	"scripts": {
+		"lint": "find authentik_dav tests -name '*.php' -print0 | xargs -0 -n1 php -l",
+		"test": "phpunit"
+	},
+	"config": {
+		"sort-packages": true
+	}
+}

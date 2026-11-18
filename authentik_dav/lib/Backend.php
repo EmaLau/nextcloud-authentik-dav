@@ -10,7 +10,6 @@ use OCP\ICacheFactory;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserManager;
-use OCP\Server;
 use OCP\User\Backend\ABackend;
 use OCP\User\Backend\ICheckPasswordBackend;
 use OCP\User\Backend\IGetDisplayNameBackend;
@@ -33,6 +32,7 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 		private ICacheFactory $cacheFactory,
 		private IAppConfig $appConfig,
 		private IGroupManager $groupManager,
+		private IUserManager $userManager,
 		private IRequest $request,
 		private LoggerInterface $logger,
 	) {
@@ -46,7 +46,7 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 		if ($loginName === '' || $password === '' || strlen($password) > 1024) {
 			return false;
 		}
-		$user = Server::get(IUserManager::class)->get($loginName);
+		$user = $this->userManager->get($loginName);
 		if ($user === null || !$user->isEnabled()) {
 			// Not our business: the account does not exist here or is disabled.
 			return false;
@@ -154,7 +154,7 @@ class Backend extends ABackend implements ICheckPasswordBackend, IGetDisplayName
 	}
 
 	public function getDisplayName($uid): string {
-		foreach (Server::get(IUserManager::class)->getBackends() as $backend) {
+		foreach ($this->userManager->getBackends() as $backend) {
 			if ($backend instanceof \OC\User\Database) {
 				return $backend->getDisplayName($uid);
 			}

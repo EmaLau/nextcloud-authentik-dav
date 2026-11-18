@@ -79,6 +79,18 @@ curl -u alice:'her-authentik-password' -X PROPFIND \
 
 Disable the app: `occ app:disable authentik_dav`.
 
+## Development
+
+The app has no runtime dependencies. Composer is used only for the tests, which run against Nextcloud's public API stubs (`nextcloud/ocp`) and a simulated Authentik: no network and no Nextcloud instance needed.
+
+```bash
+composer install
+composer test      # PHPUnit
+composer lint      # php -l on every file
+```
+
+Without PHP on the machine: `docker run --rm -v "$PWD:/app" -w /app composer:2 sh -c 'composer install && composer test'`.
+
 ## Roadmap
 
 What is missing before the first public release, and the features planned after it, are in [ROADMAP.md](ROADMAP.md).

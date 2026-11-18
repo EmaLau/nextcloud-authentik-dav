@@ -18,7 +18,7 @@ Where this project is going. Items move from top to bottom; each release gets it
 ### Packaging and tests
 
 - [ ] `info.xml`: real author, repository and bug tracker URLs; test on **Nextcloud 36** and declare it.
-- [ ] **PHPUnit tests** with a mocked Authentik (Guzzle mock handler): right password, wrong password, Authentik down, timeout, cache hit, admin refused when `allow_admins=no`.
+- [x] **PHPUnit tests** with a mocked Authentik (scripted flow executor answers): right password, wrong password, Authentik down, timeout, cache hit, admin refused when `allow_admins=no`.
 - [ ] **CI** on GitHub Actions: `php -l`, PHPUnit, and a static analysis pass (Psalm or PHPStan).
 - [ ] **Screenshots** of the Authentik flow and of a WebDAV client logging in.
 - [ ] Publish: make the repository public, social preview (`docs/social-preview.png`), link from the GitHub profile README and the Homelab page of emalau.it, tag `v1.0.0`.
