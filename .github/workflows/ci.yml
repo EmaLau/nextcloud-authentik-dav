@@ -27,7 +27,7 @@ jobs:
           - { nextcloud: '35', ocp: 'dev-stable35', php: '8.3' }
           - { nextcloud: '36', ocp: 'dev-master', php: '8.4' }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -57,7 +57,7 @@ jobs:
     name: Validate appinfo/info.xml
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Validate against the Nextcloud App Store schema
         run: |
@@ -82,7 +82,7 @@ jobs:
       NEXTCLOUD_TAG: ${{ matrix.nextcloud }}
       COMPOSE_FILES: ${{ matrix.db == 'postgres' && '-f dev/compose.yaml -f dev/compose.postgres.yaml' || '-f dev/compose.yaml' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Random test secrets
         run: |
@@ -124,7 +124,7 @@ jobs:
     env:
       NEXTCLOUD_TAG: apache
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Latest Authentik release
         # Authentik publishes no "latest" image tag: read the version of the latest release.
