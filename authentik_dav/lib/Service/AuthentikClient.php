@@ -42,6 +42,10 @@ class AuthentikClient {
 				return 'unexpected first stage of the Authentik flow: ' . $this->componentName($r);
 			}
 			$r = $this->decode($client->post($url, $opts + ['json' => ['component' => 'ak-stage-identification', 'uid_field' => $loginName]]));
+			if (($r['component'] ?? '') === 'ak-stage-access-denied') {
+				// A deny stage after the identification, e.g. the optional limit on failed attempts of the blueprint.
+				return 'Authentik denied access to this user (too many failed attempts?)';
+			}
 			if (($r['component'] ?? '') !== 'ak-stage-password') {
 				return 'Authentik did not accept the username';
 			}

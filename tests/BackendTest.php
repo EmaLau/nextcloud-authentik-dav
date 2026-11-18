@@ -222,6 +222,16 @@ final class BackendTest extends TestCase {
 		$this->assertTrue($this->logger->has('warning', 'Authentik did not accept the username'));
 	}
 
+	public function testDeniedUserIsRefusedWithoutSendingThePassword(): void {
+		$this->answers = [
+			['component' => 'ak-stage-identification'],
+			['component' => 'ak-stage-access-denied', 'error_message' => 'Too many failed attempts for this user. Try again later.'],
+		];
+		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));
+		$this->assertCount(2, $this->calls, 'the password must not be sent to a denied user');
+		$this->assertTrue($this->logger->has('warning', 'Authentik denied access to this user (too many failed attempts?)'));
+	}
+
 	public function testWrongFlowIsRefused(): void {
 		$this->answers = [['component' => 'ak-stage-password']];
 		$this->assertFalse($this->backend()->checkPassword('alice', self::PASSWORD));

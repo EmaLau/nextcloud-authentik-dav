@@ -17,7 +17,7 @@
 
 - **La password di Authentik in ogni client WebDAV**: Finder, Esplora risorse, rclone, Cyberduck, file manager di Linux e dei telefoni.
 - **Nessun account nuovo e nessuna password conservata**: controlla solo la password di account che esistono già in Nextcloud; Authentik resta l'unico posto dove stanno le password.
-- **Blueprint pronto per Authentik**: un solo file crea il flow di controllo e le sue stage (solo nome utente, solo database delle password di Authentik, controllo dell'MFA).
+- **Blueprint pronto per Authentik**: un solo file crea il flow di controllo e le sue stage (solo nome utente, solo database delle password di Authentik, controllo dell'MFA), con un limite facoltativo ai tentativi falliti per nome utente.
 - **Impostazioni sicure per default**: utenti con MFA, amministratori di Nextcloud e utenti fuori dai gruppi ammessi vengono rifiutati; HTTP non cifrato e indirizzi privati vanno consentiti esplicitamente; i tentativi a forza bruta li limita Nextcloud.
 - **Pagina di impostazioni** in *Impostazioni di amministrazione → Sicurezza*, con un pulsante **Prova connessione** che non invia password, e un **controllo nella panoramica** di amministrazione.
 - **Cache locale breve**: una password giusta resta come hash per 60 secondi, solo nella memoria locale, mai su Redis.
@@ -39,7 +39,7 @@
 
    ```bash
    cd /var/www/html/custom_apps
-   curl -fsSL https://github.com/EmaLau/nextcloud-authentik-dav/releases/download/v1.1.0/authentik_dav-1.1.0.tar.gz | tar -xz
+   curl -fsSL https://github.com/EmaLau/nextcloud-authentik-dav/releases/latest/download/authentik_dav.tar.gz | tar -xz
    chown -R www-data:www-data authentik_dav
    occ app:enable authentik_dav
    ```

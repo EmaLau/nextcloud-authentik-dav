@@ -17,6 +17,19 @@
 #
 # Applying it again resets the flow and the three stages to these settings.
 # To use another slug, change "flow_slug" below; the stage names follow it.
+#
+# Optional limit on failed attempts ("rate_limit: true" below, off by default):
+# a username whose Authentik reputation fell to rate_limit_threshold or lower is refused
+# before its password is checked. Every check comes from the Nextcloud server's address, so
+# the reputation counts failures per username only. Authentik keeps a score of at least -5 per
+# username and address, and forgets it 24 hours after the first failure (setting
+# AUTHENTIK_REPUTATION__EXPIRY): with the default threshold, 5 wrong passwords in a day block
+# WebDAV for that user until then (the web login is not affected). This stops someone trying
+# many passwords on one account from many addresses, but also lets anyone who knows a username
+# block its WebDAV access, and a client with an old password can block its own user.
+# Unblock a user: Customization -> Reputation scores. Recommended when Nextcloud is reachable
+# from the Internet. Switching it off again: remove
+# the stage binding at order 15 from the flow.
 version: 1
 metadata:
   name: Nextcloud WebDAV password check (authentik_dav)
@@ -25,6 +38,8 @@ metadata:
     blueprints.goauthentik.io/description: "Password-check flow for the authentik_dav Nextcloud app"
 context:
   flow_slug: nextcloud-webdav-check
+  rate_limit: false
+  rate_limit_threshold: -5
 entries:
   - model: authentik_flows.flow
     id: flow
@@ -120,3 +135,50 @@ entries:
       re_evaluate_policies: true
       invalid_response_action: retry
       policy_engine_mode: any
+
+  # Optional limit on failed attempts (see the top of the file).
+  - model: authentik_policies_reputation.reputationpolicy
+    id: reputation
+    conditions:
+      - !Context rate_limit
+    identifiers:
+      name: !Format ["%s-too-many-failures", !Context flow_slug]
+    attrs:
+      check_ip: false
+      check_username: true
+      threshold: !Context rate_limit_threshold
+
+  - model: authentik_stages_deny.denystage
+    id: deny
+    conditions:
+      - !Context rate_limit
+    identifiers:
+      name: !Format ["%s-too-many-failures", !Context flow_slug]
+    attrs:
+      deny_message: Too many failed attempts for this user. Try again later.
+
+  - model: authentik_flows.flowstagebinding
+    id: deny_binding
+    conditions:
+      - !Context rate_limit
+    identifiers:
+      target: !KeyOf flow
+      order: 15
+    attrs:
+      stage: !KeyOf deny
+      evaluate_on_plan: false
+      re_evaluate_policies: true
+      invalid_response_action: retry
+      policy_engine_mode: any
+
+  - model: authentik_policies.policybinding
+    conditions:
+      - !Context rate_limit
+    identifiers:
+      target: !KeyOf deny_binding
+      order: 0
+    attrs:
+      policy: !KeyOf reputation
+      enabled: true
+      negate: false
+      timeout: 30

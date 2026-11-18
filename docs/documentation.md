@@ -77,6 +77,16 @@ Apply the blueprint once, in one of these ways:
 
 Applying it again resets the flow and its three stages to these settings, so it is also a quick repair if someone changed them by hand. To use another slug, change `flow_slug` in the `context` section of the file: the stage names follow it.
 
+#### Optional: limit on failed attempts
+
+Nextcloud throttles failed logins **per IP address**. Someone trying many passwords on one account from many addresses is not stopped by that, and Authentik's own limit on the password stage does not help either: it counts attempts within one run of the flow, and the app starts a new run for every check.
+
+The blueprint can add a limit **per username**, based on Authentik's reputation scores. Set `rate_limit: true` in its `context` (edit the file, or fill the *Context* field of the blueprint instance with `{"rate_limit": true}`). It adds a deny stage right after the identification, used when the user's reputation fell to `rate_limit_threshold` (default `-5`) or lower: the password is then not even checked, and the Nextcloud log says `Authentik denied access to this user (too many failed attempts?)`.
+
+How Authentik counts: every wrong password lowers the score of that username by 1; a successful check does not raise it (the flow has no login stage). Every check comes from the Nextcloud server's address, and Authentik keeps a score of at least -5 per username and address, so the threshold cannot go lower than -5. Scores are forgotten 24 hours after the first failure (`AUTHENTIK_REPUTATION__EXPIRY`).
+
+The trade-off: with the default settings, **5 wrong passwords in a day block WebDAV for that user** until the score expires (the web login is not affected). This stops password guessing on one account, but anyone who knows a username can also block its WebDAV access on purpose, and a client that keeps sending an old password can block its own user. Recommended when Nextcloud is reachable from the Internet; not needed when it is only reachable through a VPN. To unblock a user, delete their scores in *Customization → Reputation scores*. To switch the limit off, remove the stage binding at order 15 from the flow.
+
 <details>
 <summary>Building the flow by hand instead</summary>
 
@@ -91,7 +101,7 @@ From a [release](https://github.com/EmaLau/nextcloud-authentik-dav/releases) (re
 
 ```bash
 cd /var/www/html/custom_apps
-curl -fsSL https://github.com/EmaLau/nextcloud-authentik-dav/releases/download/v1.1.0/authentik_dav-1.1.0.tar.gz | tar -xz
+curl -fsSL https://github.com/EmaLau/nextcloud-authentik-dav/releases/latest/download/authentik_dav.tar.gz | tar -xz
 chown -R www-data:www-data authentik_dav
 occ app:enable authentik_dav
 ```
@@ -172,6 +182,10 @@ The official Nextcloud desktop and mobile apps use the browser login (Login Flow
 
 **No session.** The check flow has no User login stage and every check starts with an empty cookie jar that is thrown away: even a session created by mistake would never be reused.
 
+**Nextcloud behind a reverse proxy.** If Nextcloud runs behind a reverse proxy (Traefik, Caddy, nginx), set `trusted_proxies` (and, if needed, `forwarded_for_headers`) in Nextcloud's `config.php`. Otherwise every request seems to come from the proxy: the logs show the proxy's address, and the brute-force protection blocks everybody at once when one client fails too often.
+
+**Timing.** Nextcloud answers faster for an account that does not exist than for one that exists (it only checks the password hash of real accounts): measured on Nextcloud 35, about 10 ms against 170 ms. So the existence of an account can already be guessed from the response time, with or without this app. The app makes the difference larger (it waits for Authentik only for existing accounts) but reveals nothing new. The brute-force protection slows down whoever tries many names.
+
 **Logs.** Every refused attempt is logged at *warning* level with user, client address and reason, **never the password** (see below). The end-to-end tests check that no password reaches the Nextcloud log.
 
 **fail2ban.** Nextcloud also writes its own `Login failed: 'alice' (Remote IP: '192.0.2.10')` line, which the usual fail2ban filters for Nextcloud already match. To match the app's line instead:
@@ -211,6 +225,7 @@ authentik_dav: login failed for user 'alice' from '192.0.2.10': <reason>
 | `the user has MFA in Authentik (use a Nextcloud app password)` | the user has a second factor in Authentik | the user creates a Nextcloud app password |
 | `administrators are excluded (allow_admins=no)` | the account is a Nextcloud admin | use an app password, or set `allow_admins=yes` |
 | `not in an allowed group (allowed_groups)` | `allowed_groups` is set and the user is in none of them | add the user to a group, or change the setting |
+| `Authentik denied access to this user (too many failed attempts?)` | the optional limit on failed attempts blocked the username | wait for the score to expire, or delete it in Authentik |
 | `Authentik did not accept the username` | the identification stage refused the name | check that the Authentik username equals the Nextcloud account name |
 | `base_url is not configured` | the address is empty | set it |
 | `base_url uses plain HTTP; use https or set allow_http=yes` | `http://` address | use `https://`, or `allow_http=yes` |

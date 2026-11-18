@@ -37,7 +37,11 @@ fi
 
 mkdir -p "$ROOT/dist"
 tar --no-xattrs -C "$STAGE" -czf "$OUT" "$APP"
-echo "Archive: $OUT ($(wc -c < "$OUT") bytes)"
+# Same archive without the version in its name, so that
+# https://github.com/EmaLau/nextcloud-authentik-dav/releases/latest/download/authentik_dav.tar.gz always works.
+cp "$OUT" "$ROOT/dist/$APP.tar.gz"
+echo "Archive: $OUT ($(wc -c < "$OUT") bytes), also dist/$APP.tar.gz"
+echo "GitHub release: upload both files"
 tar -tzf "$OUT" | sed 's/^/  /'
 if [ -f "$KEY" ]; then
   echo "App Store signature:"

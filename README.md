@@ -17,7 +17,7 @@
 
 - **The Authentik password in every WebDAV client**: Finder, Windows Explorer, rclone, Cyberduck, Linux and mobile file managers.
 - **No new accounts and no stored passwords**: it only checks the password of accounts that already exist in Nextcloud; Authentik stays the only place where passwords live.
-- **Ready-made Authentik blueprint**: one file creates the check flow and its own stages (username only, built-in password database only, MFA check).
+- **Ready-made Authentik blueprint**: one file creates the check flow and its own stages (username only, built-in password database only, MFA check), with an optional limit on failed attempts per username.
 - **Safe defaults**: users with MFA, Nextcloud administrators and users outside the allowed groups are refused; plain HTTP and private addresses must be allowed explicitly; brute force is throttled by Nextcloud.
 - **Settings page** in *Administration settings → Security*, with a **Test connection** button that sends no password, and a **setup check** in the admin overview.
 - **Short local cache**: a correct password is kept as a hash for 60 seconds in local memory only, never in Redis.
@@ -39,7 +39,7 @@
 
    ```bash
    cd /var/www/html/custom_apps
-   curl -fsSL https://github.com/EmaLau/nextcloud-authentik-dav/releases/download/v1.1.0/authentik_dav-1.1.0.tar.gz | tar -xz
+   curl -fsSL https://github.com/EmaLau/nextcloud-authentik-dav/releases/latest/download/authentik_dav.tar.gz | tar -xz
    chown -R www-data:www-data authentik_dav
    occ app:enable authentik_dav
    ```

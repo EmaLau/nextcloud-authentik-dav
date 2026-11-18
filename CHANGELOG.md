@@ -8,6 +8,10 @@
 - `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates.
 - App icon (`img/app.svg`, `img/app-dark.svg`), screenshots and documentation links in `info.xml` for the App Store.
 - Release archives include `CHANGELOG.md`, which the App Store shows.
+- Optional **limit on failed attempts per username** in the Authentik blueprint (`rate_limit: true`), based on Authentik's reputation scores, and a clear log reason when Authentik denies a user. Off by default: see the trade-off in the documentation.
+- Documentation: Nextcloud behind a reverse proxy, response times and account existence.
+- Weekly CI run with the latest Authentik and Nextcloud, Dependabot for GitHub Actions and development tools.
+- Release archives are also published as `authentik_dav.tar.gz`, so `releases/latest/download/authentik_dav.tar.gz` always points to the latest version.
 
 ## 1.1.0 — 2026-11-18
 
